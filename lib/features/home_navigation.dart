@@ -7,6 +7,7 @@ import 'package:sleept/features/tracking_screen.dart';
 import 'package:sleept/features/sleep_screen.dart';
 
 import 'home/home_screen.dart';
+import 'library_screen.dart';
 class HomeNavigation extends StatefulWidget {
   const HomeNavigation({super.key});
 
@@ -23,18 +24,7 @@ class _HomeNavigationState extends State<HomeNavigation> {
     const SleepScreen(),
     const HabitScreen(),
     const TrackingScreen(),
-    const Scaffold(
-      body: Center(
-        child: Text(
-          '라이브러리 화면',
-          style: TextStyle(
-            fontSize: 24,
-            color: Colors.white,
-          ),
-        ),
-      ),
-      backgroundColor: AppColors.mainBackground,
-    ),
+    const LibraryScreen(),
   ];
 
   @override
@@ -67,27 +57,27 @@ class _HomeNavigationState extends State<HomeNavigation> {
                 _buildTabItem(
                   index: 0,
                   label: '홈',
-                  iconPath: 'public/images/home_icon.svg',
+                  iconPath: 'assets/images/home_icon.svg',
                 ),
                 _buildTabItem(
                   index: 1,
                   label: '수면',
-                  iconPath: 'public/images/moon_icon.svg',
+                  iconPath: 'assets/images/moon_icon.svg',
                 ),
                 _buildTabItem(
                   index: 2,
                   label: '습관',
-                  iconPath: 'public/images/habit_icon.svg',
+                  iconPath: 'assets/images/habit_icon.svg',
                 ),
                 _buildTabItem(
                   index: 3,
                   label: '트래킹',
-                  iconPath: 'public/images/tracking_active.svg',
+                  iconPath: 'assets/images/tracking_active.svg',
                 ),
                 _buildTabItem(
                   index: 4,
                   label: '라이브러리',
-                  iconPath: 'public/images/library_icon.svg',
+                  iconPath: 'assets/images/library_icon.svg',
                 ),
               ],
             ),

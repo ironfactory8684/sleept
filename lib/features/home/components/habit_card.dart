@@ -60,7 +60,7 @@ class HabitCard extends StatelessWidget {
                         height: 24,
                         clipBehavior: Clip.antiAlias,
                         decoration: BoxDecoration(),
-                        child:   SvgPicture.asset( 'public/images/icon_clover.svg',), // 아이콘 예시
+                        child:   SvgPicture.asset( 'assets/images/icon_clover.svg',), // 아이콘 예시
                       ),
                       Text(
                         '줄넘기 100회',

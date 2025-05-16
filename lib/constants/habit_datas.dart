@@ -31,7 +31,7 @@ Map habitData ={
         'descript':'다리 근육을 강화 하는 운동'
       },
     },
-    'iconPath':'public/images/icon_clover.svg',
+    'iconPath':'assets/images/icon_clover.svg',
     'image':'athletic.jpg',
     'subtitle':'중간에 깨지 않는 깊은 숙면을 위해 땀이 날 정도로 운동하기',
     'tags': ['#땀흘리기', '#유산소운동', '#쉬운운동'],
@@ -56,7 +56,7 @@ Map habitData ={
         'descript':'다리 뒤 근육을 풀어 피로 감소'
       },
     },
-    'iconPath':'public/images/icon_stairs.svg',
+    'iconPath':'assets/images/icon_stairs.svg',
     'subtitle':'잠들기 전에 꿀잠 자는 단시간 스트레칭 해주기',
     'tags': ['#꿀잠', '#숙면요가', '#상하체스트레칭'],
     'description':'잠들기 전 짧은 스트레칭은 근육 긴장 완화에 도움을 주어 숙면을 돕습니다.',
@@ -80,7 +80,7 @@ Map habitData ={
         'descript':'심박수 낮추고 몸의 긴장 완화'
       },
     },
-    'iconPath':'public/images/icon_cloud.svg',
+    'iconPath':'assets/images/icon_cloud.svg',
     'subtitle':'수면을 방해하지 않는 카페인 섭취 조절과 일상에서 물 마셔주기',
     'tags': ['#수분섭취', '#카페인조절', '#일상루틴'],
     'description':'카페인 조절과 충분한 수분 섭취, 가벼운 산책이 몸의 밸런스를 유지해 숙면을 돕습니다.',
@@ -104,7 +104,7 @@ Map habitData ={
         'descript':'신체 각 부위 이완 상태 확인'
       },
     },
-    'iconPath':'public/images/icon_circle.svg',
+    'iconPath':'assets/images/icon_circle.svg',
     'subtitle':'잡 생각을 비워주고 마음을 가볍게 만들어주는 힐링 명상하기',
     'tags':  ['#힐링명상', '#생각정리'],
     'description':'명상은 마음을 진정시키고 스트레스를 줄여 깊은 수면을 유도합니다.',

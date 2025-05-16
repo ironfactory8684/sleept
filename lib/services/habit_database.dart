@@ -1,10 +1,10 @@
 import 'dart:async';
-import 'dart:io';
 import 'package:path/path.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:sqflite/sqflite.dart';
 
 import '../features/habit/model/tracking_entry.dart';
+import '../models/snoring_event.dart';
 
 class HabitModel {
   final int? id;
@@ -85,9 +85,19 @@ class HabitDatabase {
     final path = join(dir.path, fileName);
     return await openDatabase(
       path,
-      version: 2,
+      version: 3,
       onCreate: _createDB,
       onUpgrade: _onUpgrade,
+      onOpen: (db) async {
+        // Ensure snoring_events table exists
+        await db.execute('''
+          CREATE TABLE IF NOT EXISTS snoring_events (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            startTime TEXT NOT NULL,
+            endTime TEXT NOT NULL
+          )
+        ''');
+      },
     );
   }
 
@@ -118,6 +128,13 @@ class HabitDatabase {
       )
     ''');
 
+    await db.execute('''
+      CREATE TABLE snoring_events (
+        id $idType,
+        startTime $textType,
+        endTime $textType
+      )
+    ''');
   }
 
   Future _onUpgrade(Database db, int oldVersion, int newVersion) async {
@@ -125,6 +142,16 @@ class HabitDatabase {
       await db.execute('ALTER TABLE habits ADD COLUMN startDate TEXT NOT NULL DEFAULT ""');
       await db.execute('ALTER TABLE habits ADD COLUMN endDate TEXT NOT NULL DEFAULT ""');
       await db.execute('ALTER TABLE habits ADD COLUMN isCompleted INTEGER NOT NULL DEFAULT 0');
+    }
+    // Add snoring_events table for existing DBs upgrading to v3
+    if (oldVersion < 3) {
+      await db.execute('''
+        CREATE TABLE snoring_events (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          startTime TEXT NOT NULL,
+          endTime TEXT NOT NULL
+        )
+      ''');
     }
   }
 
@@ -171,6 +198,19 @@ class HabitDatabase {
     return result.map((map) => TrackingEntry.fromMap(map)).toList();
   }
 
+  // Create snoring event
+  Future<SnoringEvent> createSnoringEvent(SnoringEvent event) async {
+    final db = await instance.database;
+    final id = await db.insert('snoring_events', event.toMap());
+    return SnoringEvent(id: id, startTime: event.startTime, endTime: event.endTime);
+  }
+
+  // Read snoring events
+  Future<List<SnoringEvent>> readSnoringEvents() async {
+    final db = await instance.database;
+    final result = await db.query('snoring_events', orderBy: 'startTime ASC');
+    return result.map((map) => SnoringEvent.fromMap(map)).toList();
+  }
 
   Future close() async {
     final db = await instance.database;

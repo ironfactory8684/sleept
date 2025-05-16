@@ -3,6 +3,7 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:audioplayers/audioplayers.dart';
 import '../utils/app_colors.dart'; // AppColors 임포트 (필요시 경로 수정)
 import 'dart:ui'; // ImageFilter 사용 위해 추가
+import 'package:sleept/services/favorites_database.dart';
 
 class MusicPlayerScreen extends StatefulWidget {
   final String imagePath;
@@ -29,11 +30,13 @@ class _MusicPlayerScreenState extends State<MusicPlayerScreen> {
   bool _isPlaying = false;
   Duration _duration = Duration.zero;
   Duration _position = Duration.zero;
+  bool _isFavorited = false; // 즐겨찾기 상태
 
   @override
   void initState() {
     super.initState();
     _initAudioPlayer();
+    _loadFavoriteStatus();
   }
 
   Future<void> _initAudioPlayer() async {
@@ -78,6 +81,12 @@ class _MusicPlayerScreenState extends State<MusicPlayerScreen> {
     }
   }
 
+  // DB에서 즐겨찾기 여부 로드
+  Future<void> _loadFavoriteStatus() async {
+    final fav = await FavoriteDatabase.instance.isFavorited(widget.musicPath);
+    if (!mounted) return;
+    setState(() => _isFavorited = fav);
+  }
 
   @override
   void dispose() {
@@ -259,7 +268,7 @@ class _MusicPlayerScreenState extends State<MusicPlayerScreen> {
              ClipOval(
                child: Image.asset(
                  // widget.imagePath, // SleepScreen에서 받은 이미지 사용
-                 'assets/images/music_album_art_placeholder.png', // 다운로드한 플레이스홀더 이미지
+                 widget.imagePath,
                  width: size - 8, // 안쪽 원 크기
                  height: size - 8,
                  fit: BoxFit.cover,
@@ -367,19 +376,26 @@ class _MusicPlayerScreenState extends State<MusicPlayerScreen> {
           // 좋아요 버튼 (Icon_heart_large)
           IconButton(
             icon: SvgPicture.asset(
-              'assets/images/heart_icon_filled_large.svg', // 에셋 경로 확인 필요 (분홍색 하트)
+              'assets/images/Icon_heart_large.svg', // 에셋 경로 확인 필요 (분홍색 하트)
               width: 28, height: 28,
-               colorFilter: ColorFilter.mode(AppColors.heartIconBackground, BlendMode.srcIn) // #FF5C79
-              ),
-            iconSize: 28,
-            onPressed: () {
-              // 좋아요 로직
+               colorFilter: _isFavorited
+                   ? null
+                   : ColorFilter.mode(AppColors.heartIconBackground, BlendMode.srcIn), // 비활성화 시 필터 유지
+             ),
+             iconSize: 28,
+             onPressed: () async {
+              if (_isFavorited) {
+                await FavoriteDatabase.instance.removeFavorite(widget.musicPath);
+              } else {
+                await FavoriteDatabase.instance.addFavorite(widget.musicPath);
+              }
+              setState(() => _isFavorited = !_isFavorited);
             },
           ),
           // 15초 뒤로 (Icon_rewind)
            IconButton(
              icon: SvgPicture.asset(
-                 'assets/images/rewind_15_icon.svg', // 에셋 경로 확인 필요
+                 'assets/images/Icon_rewind.svg', // 에셋 경로 확인 필요
                  width: 28, height: 28,
                  colorFilter: ColorFilter.mode(AppColors.textWhite, BlendMode.srcIn)
                  ),
@@ -399,7 +415,7 @@ class _MusicPlayerScreenState extends State<MusicPlayerScreen> {
             ),
             child: IconButton(
                icon: SvgPicture.asset(
-                 _isPlaying ? 'assets/images/pause_icon.svg' : 'assets/images/play_icon.svg', // 에셋 경로 확인 필요
+                 _isPlaying ? 'assets/images/Icon_stop.svg' : 'assets/images/play_icon.svg', // 에셋 경로 확인 필요
                  width: 32, height: 32,
                  colorFilter: ColorFilter.mode(AppColors.textWhite, BlendMode.srcIn)
                  ),
@@ -438,7 +454,7 @@ class _MusicPlayerScreenState extends State<MusicPlayerScreen> {
           // 반복 버튼 (Icon_ repeat)
            IconButton(
              icon: SvgPicture.asset(
-                 'assets/images/repeat_icon.svg', // 에셋 경로 확인 필요
+                 'assets/images/Icon_repeat.svg', // 에셋 경로 확인 필요
                  width: 28, height: 28,
                   colorFilter: ColorFilter.mode(AppColors.textWhite, BlendMode.srcIn)
                  ),

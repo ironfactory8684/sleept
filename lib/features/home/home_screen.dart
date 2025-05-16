@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:sleept/features/home/home_habit_screen.dart';
+import 'package:sleept/features/home/snoring_graph.dart';
 
 import '../../constants/colors.dart';
 
@@ -53,7 +54,7 @@ class _HomeScreenState extends State<HomeScreen>
                 controller: _tabController,
                 children: [
                   // Content for '나의 수면' tab
-                  Center(child: Text('나의 수면 Content')),
+                  const SnoringGraph(),
                   // Content for '나의 습관' tab
                   HomeHabitScreen(),
                 ],
@@ -64,8 +65,4 @@ class _HomeScreenState extends State<HomeScreen>
       ),
     );
   }
-
-
 }
-
-

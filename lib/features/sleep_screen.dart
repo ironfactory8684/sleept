@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart'; // SVG 사용을 위해 추가
 import '../utils/app_colors.dart'; // AppColors 임포트
 import 'music_player_screen.dart'; // MusicPlayerScreen 임포트
+import 'package:sleept/services/music_database.dart';
+import 'package:sleept/models/music_model.dart';
 
 class SleepScreen extends StatefulWidget {
   const SleepScreen({super.key});
@@ -13,6 +15,19 @@ class SleepScreen extends StatefulWidget {
 class _SleepScreenState extends State<SleepScreen> {
   String selectedChip = '전체';
   final List<String> chips = ['전체', '팟캐스트', '명상', 'ASMR', '스트레칭'];
+  List<MusicModel> _musics = [];  // DB에서 로드된 음악 목록
+
+  @override
+  void initState() {
+    super.initState();
+    _loadMusics();
+  }
+
+  Future<void> _loadMusics() async {
+    final list = await MusicDatabase.instance.readAllMusics();
+    if (!mounted) return;
+    setState(() => _musics = list);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -50,27 +65,25 @@ class _SleepScreenState extends State<SleepScreen> {
                     // 스르륵 눈이 감기는 날 섹션
                     _buildSectionTitle('스르륵 눈이 감기는 날'),
                     const SizedBox(height: 16),
-                    _buildHorizontalContentList([
-                      _buildContentCard('assets/images/card_image_1.png', '깊은 수면을 위한 움직임', '스트레칭', '15분', 'assets/music/bathroom-chill-background-music-14977.mp3'),
-                      _buildContentCard('assets/images/card_image_2.png', '비 내리는 숲 속의 연주', 'ASMR', '3시간', 'assets/music/midnight-forest-184304.mp3'),
-                      _buildContentCard('assets/images/card_image_3.png', '느긋한 오후와 차 한잔', '명상', '2시간 30분', 'assets/music/quiet-sleep-2-263254.mp3'),
-                    ]),
+                    _buildHorizontalContentList(
+                      _musics.map((m) =>
+                        _buildContentCard(m.imagePath, m.title, m.category, m.duration, m.musicPath)
+                      ).toList(),
+                    ),
                     const SizedBox(height: 24),
 
                      // 편안한 자연의 소리 섹션
                     _buildSectionTitle('편안한 자연의 소리'),
                     const SizedBox(height: 16),
-                     _buildHorizontalContentList([
-                      _buildContentCard('assets/images/card_image_4.png', '나만의 세계와 바람 소리', 'ASMR', '2시간', 'assets/music/soothing-deep-sleep-music-432-hz-191708.mp3'),
-                      _buildContentCard('assets/images/card_image_5.png', '도시 속 폭우와 나', 'ASMR', '1시간 20분', 'assets/music/the-old-water-mill-meditation-8005.mp3'),
-                      _buildContentCard('assets/images/card_image_6.png', '붉은 노을이 지는 해변가에 서서 파도 소리를 들으며', 'ASMR', '2시간 30분', 'assets/music/wave_sound.mp3'),
-                    ]),
+                     _buildHorizontalContentList(
+                      _musics.map((m) =>
+                        _buildContentCard(m.imagePath, m.title, m.category, m.duration, m.musicPath)
+                      ).toList(),
+                    ),
                     const SizedBox(height: 24),
 
                     // 포근한 자장가 팟캐스트 (Featured Card)
                     // _buildFeaturedPodcastCard(),
-
-
                   ],
                 ),
               ),
@@ -646,74 +659,4 @@ class _SleepScreenState extends State<SleepScreen> {
         ),
       );
    }
-
-
-  // 하단 네비게이션 바 위젯
-  Widget _buildBottomNavigationBar() {
-    return Positioned(
-      bottom: 0,
-      left: 0,
-      right: 0,
-      child: Container(
-        decoration: BoxDecoration(
-          color: AppColors.bottomNavBackground,
-          border: Border(
-            top: BorderSide(color: AppColors.bottomNavBorder, width: 1), // 피그마 stroke_2EETIV
-          ),
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Padding(
-              padding: const EdgeInsets.only(top: 8.0, bottom: 5.0), // 패딩 조정
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceAround,
-                children: [
-                  _buildBottomNavItem(Icons.home_filled, '홈', false, 0), // 실제 아이콘 SVG로 대체 가능
-                  _buildBottomNavItem(Icons.nightlight_round, '수면', true, 1), // 실제 아이콘 SVG로 대체 가능
-                  _buildBottomNavItem(Icons.calendar_today, '습관', false, 2), // 실제 아이콘 SVG로 대체 가능
-                  _buildBottomNavItem(Icons.show_chart, '트래킹', false, 3), // 실제 아이콘 SVG로 대체 가능
-                  _buildBottomNavItem(Icons.bookmark, '라이브러리', false, 4), // 실제 아이콘 SVG로 대체 가능
-                ],
-              ),
-            ),
-             // Home Indicator (iOS 하단 바) - 필요시 추가
-             Container(
-                height: MediaQuery.of(context).padding.bottom > 0 ? 20 : 5, // 하단 안전 영역 고려
-                // color: AppColors.bottomNavBackground, // 배경색 동일하게
-             )
-          ],
-        ),
-      ),
-    );
-  }
-
-  // 하단 네비게이션 아이템 위젯
-  Widget _buildBottomNavItem(IconData iconData, String label, bool isSelected, int index) {
-    // 피그마 디자인의 아이콘/텍스트 색상 및 스타일 적용
-    final Color color = isSelected ? AppColors.chipSelectedBackground : AppColors.iconGray;
-    final Color textColor = isSelected ? AppColors.chipSelectedBackground : AppColors.textDarkGray;
-    final FontWeight fontWeight = isSelected ? FontWeight.w700 : FontWeight.w500;
-
-    return GestureDetector(
-      onTap: () {
-        // 네비게이션 로직 추가
-      },
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(iconData, color: color, size: 24), // SVG 아이콘으로 대체 시 크기 조정 필요
-          const SizedBox(height: 4),
-          Text(
-            label,
-            style: TextStyle(
-              fontSize: 12,
-              fontWeight: fontWeight,
-              color: textColor,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-} 
+}

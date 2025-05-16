@@ -6,7 +6,11 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:sleept/components/am_pm_selector.dart';
 import 'package:sleept/components/time_slot_picker.dart';
 import 'package:sleept/constants/colors.dart';
-// import 'package:sleept/screens/sleep_tracking_screen.dart'; 삭제
+import 'package:permission_handler/permission_handler.dart';
+import 'package:flutter_audio_capture/flutter_audio_capture.dart';
+import 'dart:typed_data';
+import 'package:sleept/services/habit_database.dart';
+import 'package:sleept/models/snoring_event.dart';
 
 class TrackingScreen extends StatefulWidget {
   const TrackingScreen({super.key});
@@ -22,10 +26,19 @@ class _TrackingScreenState extends State<TrackingScreen> {
   bool _isTracking = false; // 트래킹 상태 추가
   Timer? _timer; // 카운트다운 타이머
   Duration _remainingTime = Duration.zero; // 남은 시간
+  late final FlutterAudioCapture _audioCapture;
+  bool _isSnoring = false;
+  DateTime? _snoreStartTime;
+
+  @override
+  void initState() {
+    super.initState();
+    _audioCapture = FlutterAudioCapture();
+  }
 
   // 알람 시간과 현재 시간 차이 계산 및 상태 업데이트
   void _updateRemainingTime() {
-    final now = TimeOfDay.now();
+    // final now = TimeOfDay.now();
 
     // 24시간 형식으로 변환
     int targetHour = _selectedHour;
@@ -64,16 +77,16 @@ class _TrackingScreenState extends State<TrackingScreen> {
   String _formatDuration(Duration duration) {
     int hours = duration.inHours;
     int minutes = duration.inMinutes.remainder(60);
-    int seconds = duration.inSeconds.remainder(60); // 초 단위 추가 (선택 사항)
     // return '$hours시간 $minutes분 뒤에 깨워드릴게요'; // 기존 방식
     return '${hours.toString().padLeft(2, '0')}시간 ${minutes.toString().padLeft(2, '0')}분'; // 시:분:초 형식
   }
 
   // 트래킹 시작 함수
-  void _startTracking() {
+  Future<void> _startTracking() async {
     setState(() {
       _isTracking = true;
     });
+    await _startAudioCapture();
     _updateRemainingTime(); // 즉시 남은 시간 계산
     _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
       _updateRemainingTime();
@@ -83,16 +96,54 @@ class _TrackingScreenState extends State<TrackingScreen> {
   // 트래킹 중지 함수
   void _stopTracking() {
     _timer?.cancel();
+    if (_isSnoring && _snoreStartTime != null) {
+      final endTime = DateTime.now();
+      HabitDatabase.instance.createSnoringEvent(
+          SnoringEvent(startTime: _snoreStartTime!, endTime: endTime));
+      _snoreStartTime = null;
+    }
+    _audioCapture.stop();
     setState(() {
       _isTracking = false;
       _remainingTime = Duration.zero;
+      _isSnoring = false;
     });
   }
 
   @override
   void dispose() {
     _timer?.cancel(); // 위젯 제거 시 타이머 취소
+    _audioCapture.stop();
     super.dispose();
+  }
+
+  // 오디오 캡처 및 FFT 기반 코골이 감지 시작
+  Future<void> _startAudioCapture() async {
+    final status = await Permission.microphone.request();
+    if (status != PermissionStatus.granted) return;
+    await _audioCapture.start(
+      (data) {
+        final pcm = data as Float32List;
+        // simple energy detection (sum of squares)
+        final double energy = pcm.fold(0.0, (a, b) => a + b * b);
+        final bool snoring = energy > 1000; // threshold may require tuning
+        if (snoring && !_isSnoring) {
+          _snoreStartTime = DateTime.now();
+          setState(() => _isSnoring = true);
+        } else if (!snoring && _isSnoring) {
+          final endTime = DateTime.now();
+          HabitDatabase.instance.createSnoringEvent(
+              SnoringEvent(startTime: _snoreStartTime!, endTime: endTime));
+          _snoreStartTime = null;
+          setState(() => _isSnoring = false);
+        }
+      },
+      (error) {
+        debugPrint('Audio capture error: $error');
+      },
+      sampleRate: 44100,
+      bufferSize: 1024,
+    );
   }
 
   @override
@@ -232,7 +283,7 @@ class _TrackingScreenState extends State<TrackingScreen> {
                 top: 0,
                 left: -55,
                 child: SvgPicture.asset(
-                  'public/images/cloud_1.svg', // 경로 확인!
+                  'assets/images/cloud_1.svg', // 경로 확인!
                   width: 239,
                 ),
               ),
@@ -240,7 +291,7 @@ class _TrackingScreenState extends State<TrackingScreen> {
                 top: 139,
                 right: -40,
                 child: SvgPicture.asset(
-                  'public/images/cloud_2.svg', // 경로 확인!
+                  'assets/images/cloud_2.svg', // 경로 확인!
                   width: 203,
                 ),
               ),
@@ -248,7 +299,7 @@ class _TrackingScreenState extends State<TrackingScreen> {
                 bottom: 0,
                 left: -45,
                 child: SvgPicture.asset(
-                  'public/images/cloud_3.svg', // 경로 확인!
+                  'assets/images/cloud_3.svg', // 경로 확인!
                   width: 149,
                 ),
               ),
@@ -260,7 +311,7 @@ class _TrackingScreenState extends State<TrackingScreen> {
                   children: [
                     Center(
                       child: SvgPicture.asset(
-                        'public/images/moon_tracking.svg', // 경로 확인!
+                        'assets/images/moon_tracking.svg', // 경로 확인!
                         width: 202,
                         height: 209,
                       ),
@@ -274,7 +325,7 @@ class _TrackingScreenState extends State<TrackingScreen> {
                 top: 28,
                 left: 80,
                 child: SvgPicture.asset(
-                  'public/images/icon_star_1.svg', // 경로 확인!
+                  'assets/images/icon_star_1.svg', // 경로 확인!
                   width: 21,
                 ),
               ),
@@ -282,7 +333,7 @@ class _TrackingScreenState extends State<TrackingScreen> {
                 bottom: 21,
                 right: 48,
                 child: SvgPicture.asset(
-                  'public/images/icon_star_2.svg', // 경로 확인!
+                  'assets/images/icon_star_2.svg', // 경로 확인!
                   width: 59,
                 ),
               ),
@@ -290,7 +341,7 @@ class _TrackingScreenState extends State<TrackingScreen> {
                 top: 103,
                 right: 180,
                 child: SvgPicture.asset(
-                  'public/images/icon_star_3.svg', // 경로 확인!
+                  'assets/images/icon_star_3.svg', // 경로 확인!
                   width: 26,
                 ),
               ),
@@ -298,7 +349,7 @@ class _TrackingScreenState extends State<TrackingScreen> {
                 top: 60,
                 right: 130,
                 child: SvgPicture.asset(
-                  'public/images/icon_star_4.svg', // 경로 확인!
+                  'assets/images/icon_star_4.svg', // 경로 확인!
                   width: 26,
                 ),
               ),
@@ -306,7 +357,7 @@ class _TrackingScreenState extends State<TrackingScreen> {
                 bottom: 60,
                 left: 130,
                 child: SvgPicture.asset(
-                  'public/images/icon_star_5.svg', // 경로 확인!
+                  'assets/images/icon_star_5.svg', // 경로 확인!
                   width: 16,
                 ),
               ),
@@ -321,7 +372,7 @@ class _TrackingScreenState extends State<TrackingScreen> {
         //   left: 0,
         //   right: 0,
         //   child: SvgPicture.asset(
-        //     'public/images/vector_line.svg', // 경로 확인!
+        //     'assets/images/vector_line.svg', // 경로 확인!
         //     width: MediaQuery.of(context).size.width,
         //     fit: BoxFit.cover, // 화면 너비에 맞게 조절
         //   ),
@@ -402,6 +453,18 @@ class _TrackingScreenState extends State<TrackingScreen> {
     return Column(
       mainAxisAlignment: MainAxisAlignment.end,
       children: [
+        if (_isSnoring)
+          Padding(
+            padding: const EdgeInsets.only(bottom: 16.0),
+            child: Text(
+              '😴 코골이 감지 중',
+              style: TextStyle(
+                color: Colors.redAccent,
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
         // 알람 설정 버튼 (기존 코드 유지)
         // Container( ... 알람음 및 진동 설정 버튼 ... )
         const Spacer(),
@@ -441,7 +504,7 @@ class _TrackingScreenState extends State<TrackingScreen> {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                SvgPicture.asset('public/images/time.svg'),
+                SvgPicture.asset('assets/images/time.svg'),
                 SizedBox(width: 5,),
                 Text(
                   '알람음 및 진동 설정',

@@ -49,7 +49,7 @@ class CategoryItemCard extends StatelessWidget {
                   ],
                 ),
                 SvgPicture.asset(
-                  'public/images/arrow.svg',
+                  'assets/images/arrow.svg',
                   width: 24,
                   height: 24,
                   colorFilter: const ColorFilter.mode(AppColors.tagText, BlendMode.srcIn),

@@ -62,7 +62,7 @@ class _TimeSlotPickerState extends State<TimeSlotPicker> {
           margin: EdgeInsets.only(top: 30),
           padding: const EdgeInsets.symmetric(horizontal: 10.0),
           child:  SvgPicture.asset(
-            'public/images/colon.svg', // 경로 확인!
+            'assets/images/colon.svg', // 경로 확인!
             width: 9,
             height: 35,
             colorFilter: const ColorFilter.mode(
@@ -85,7 +85,7 @@ class _TimeSlotPickerState extends State<TimeSlotPicker> {
   Widget _buildHourPicker() {
     return ListWheelScrollView.useDelegate(
       controller: _hoursController,
-      itemExtent: 66,
+      itemExtent: 80,
       perspective: 0.005,
       diameterRatio: 1.5,
       physics: const FixedExtentScrollPhysics(),
@@ -125,7 +125,7 @@ class _TimeSlotPickerState extends State<TimeSlotPicker> {
   Widget _buildMinutePicker() {
     return ListWheelScrollView.useDelegate(
       controller: _minutesController,
-      itemExtent: 66,
+      itemExtent: 80,
       perspective: 0.005,
       diameterRatio: 1.5,
       physics: const FixedExtentScrollPhysics(),

@@ -96,7 +96,7 @@ class HabitScreen extends StatelessWidget {
               child: Stack(
                 children: [
                   SvgPicture.asset(
-                    'public/images/question_circle.svg',
+                    'assets/images/question_circle.svg',
                     width: 36,
                     height: 36,
                     colorFilter: const ColorFilter.mode(
@@ -106,7 +106,7 @@ class HabitScreen extends StatelessWidget {
                   ),
                   Center(
                     child: SvgPicture.asset(
-                      'public/images/question_mark.svg',
+                      'assets/images/question_mark.svg',
                       width: 16,
                       height: 16,
                       colorFilter: const ColorFilter.mode(
