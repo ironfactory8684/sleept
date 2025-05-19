@@ -1,0 +1,56 @@
+Launching lib/main.dart on SM S926N in debug mode...
+Running Gradle task 'assembleDebug'...
+/Users/jepiloseu/.pub-cache/hosted/pub.dev/permission_handler_android-10.3.6/android/src/main/java/com/baseflow/permissionhandler/PermissionHandlerPlugin.java:28: error: cannot find symbol
+    @Nullable private io.flutter.plugin.common.PluginRegistry.Registrar pluginRegistrar;
+                                                             ^
+  symbol:   class Registrar
+  location: interface PluginRegistry
+/Users/jepiloseu/.pub-cache/hosted/pub.dev/permission_handler_android-10.3.6/android/src/main/java/com/baseflow/permissionhandler/PermissionHandlerPlugin.java:47: error: cannot find symbol
+    public static void registerWith(io.flutter.plugin.common.PluginRegistry.Registrar registrar) {
+                                                                           ^
+  symbol:   class Registrar
+  location: interface PluginRegistry
+2 errors
+e: file:///Users/jepiloseu/.pub-cache/hosted/pub.dev/flutter_audio_capture-1.1.10/android/src/main/kotlin/com/ymd/flutter_audio_capture/FlutterAudioCapturePlugin.kt:11:48 Unresolved reference: Registrar
+e: file:///Users/jepiloseu/.pub-cache/hosted/pub.dev/flutter_audio_capture-1.1.10/android/src/main/kotlin/com/ymd/flutter_audio_capture/FlutterAudioCapturePlugin.kt:36:33 Unresolved reference: Registrar
+
+FAILURE: Build completed with 2 failures.
+
+1: Task failed with an exception.
+-----------
+* What went wrong:
+Execution failed for task ':permission_handler_android:compileDebugJavaWithJavac'.
+> Compilation failed; see the compiler error output for details.
+
+* Try:
+> Run with --info option to get more log output.
+> Run with --scan to get full insights.
+==============================================================================
+
+2: Task failed with an exception.
+-----------
+* What went wrong:
+Execution failed for task ':flutter_audio_capture:compileDebugKotlin'.
+> A failure occurred while executing org.jetbrains.kotlin.compilerRunner.GradleCompilerRunnerWithWorkers$GradleKotlinCompilerWorkAction
+   > Compilation error. See log for more details
+
+* Try:
+> Run with --stacktrace option to get the stack trace.
+> Run with --info or --debug option to get more log output.
+> Run with --scan to get full insights.
+> Get more help at https://help.gradle.org.
+==============================================================================
+
+BUILD FAILED in 30s
+
+┌─ Flutter Fix ───────────────────────────────────────────────────────────────────────────────────┐
+│ [!] Consult the error logs above to identify any broken plugins, specifically those containing  │
+│ "error: cannot find symbol..."                                                                  │
+│ This issue is likely caused by v1 embedding removal and the plugin's continued usage of removed │
+│ references to the v1 embedding.                                                                 │
+│ To fix this error, please upgrade your current package's dependencies to latest versions by     │
+│ running `flutter pub upgrade`.                                                                  │
+│ If that does not work, please file an issue for the problematic plugin(s) here:                 │
+│ https://github.com/flutter/flutter/issues                                                       │
+└─────────────────────────────────────────────────────────────────────────────────────────────────┘
+Error: Gradle task assembleDebug failed with exit code 1

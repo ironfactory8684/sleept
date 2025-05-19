@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart'; // SVG 사용을 위해 추가
-import '../utils/app_colors.dart'; // AppColors 임포트
+import '../../utils/app_colors.dart'; // AppColors 임포트
 import 'music_player_screen.dart'; // MusicPlayerScreen 임포트
 import 'package:sleept/services/music_database.dart';
 import 'package:sleept/models/music_model.dart';

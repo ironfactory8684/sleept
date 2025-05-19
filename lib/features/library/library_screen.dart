@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import '../constants/colors.dart';
+import '../../constants/colors.dart';
 
 class LibraryScreen extends StatefulWidget {
   const LibraryScreen({super.key});

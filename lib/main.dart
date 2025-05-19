@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:sleept/features/home_navigation.dart';
+import 'package:sleept/features/init/home_navigation.dart';
 import 'package:intl/date_symbol_data_local.dart'; // DateFormat 초기화 위해 impor
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();

@@ -3,11 +3,11 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:sleept/constants/colors.dart';
 import 'package:sleept/features/habit/habit_screen.dart';
 import 'package:sleept/features/home/home_habit_screen.dart';
-import 'package:sleept/features/tracking_screen.dart';
-import 'package:sleept/features/sleep_screen.dart';
+import 'package:sleept/features/tracking/tracking_screen.dart';
+import 'package:sleept/features/sleep/sleep_screen.dart';
 
-import 'home/home_screen.dart';
-import 'library_screen.dart';
+import '../home/home_screen.dart';
+import '../library/library_screen.dart';
 class HomeNavigation extends StatefulWidget {
   const HomeNavigation({super.key});
 
@@ -29,9 +29,11 @@ class _HomeNavigationState extends State<HomeNavigation> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: _screens[_currentIndex],
-      bottomNavigationBar: _buildBottomNavigationBar(),
+    return SafeArea(
+      child: Scaffold(
+        body: _screens[_currentIndex],
+        bottomNavigationBar: _buildBottomNavigationBar(),
+      ),
     );
   }
 
