@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:intl/intl.dart';
 import 'package:sleept/models/snoring_event.dart';
-import 'package:sleept/services/habit_database.dart';
+import 'package:sleept/features/habit/service/habit_database.dart';
 
 class SnoringGraph extends StatefulWidget {
   const SnoringGraph({Key? key}) : super(key: key);

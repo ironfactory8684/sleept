@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
 
-import '../../../services/habit_database.dart';
+import '../../habit/service/habit_database.dart';
 import '../habit_tracking_screen.dart';
 
 class HabitCard extends StatelessWidget {

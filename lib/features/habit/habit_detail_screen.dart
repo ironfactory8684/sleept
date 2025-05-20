@@ -8,7 +8,7 @@ import 'package:sleept/features/habit/components/habit_item.dart';
 
 import 'model/habit_data.dart';
 import 'components/habit_dialog.dart';
-import 'package:sleept/services/habit_database.dart';
+import 'package:sleept/features/habit/service/habit_database.dart';
 
 class HabitDetailScreen extends StatefulWidget {
   final String type;

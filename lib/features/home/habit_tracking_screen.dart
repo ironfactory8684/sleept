@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:sleept/constants/colors.dart';
 import 'package:sleept/constants/habit_datas.dart';
 
-import '../../services/habit_database.dart';
+import '../habit/service/habit_database.dart';
 import '../habit/model/tracking_entry.dart';
 
 class HabitTrackinglScreen extends StatefulWidget {

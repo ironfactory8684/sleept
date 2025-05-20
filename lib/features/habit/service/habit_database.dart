@@ -3,8 +3,8 @@ import 'package:path/path.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:sqflite/sqflite.dart';
 
-import '../features/habit/model/tracking_entry.dart';
-import '../models/snoring_event.dart';
+import '../model/tracking_entry.dart';
+import '../../../models/snoring_event.dart';
 
 class HabitModel {
   final int? id;

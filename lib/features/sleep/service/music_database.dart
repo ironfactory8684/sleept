@@ -3,7 +3,7 @@ import 'package:path/path.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:sqflite/sqflite.dart';
 
-import '../models/music_model.dart';
+import '../../../models/music_model.dart';
 
 class MusicDatabase {
   static final MusicDatabase instance = MusicDatabase._init();

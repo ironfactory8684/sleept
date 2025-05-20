@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:sleept/features/home/components/habit_card.dart';
-import 'package:sleept/services/habit_database.dart';
+import 'package:sleept/features/habit/service/habit_database.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:sleept/constants/colors.dart';
 

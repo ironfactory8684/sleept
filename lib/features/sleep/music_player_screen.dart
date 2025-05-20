@@ -3,7 +3,7 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:audioplayers/audioplayers.dart';
 import '../../utils/app_colors.dart'; // AppColors 임포트 (필요시 경로 수정)
 import 'dart:ui'; // ImageFilter 사용 위해 추가
-import 'package:sleept/services/favorites_database.dart';
+import 'package:sleept/features/sleep/service/favorites_database.dart';
 
 class MusicPlayerScreen extends StatefulWidget {
   final String imagePath;

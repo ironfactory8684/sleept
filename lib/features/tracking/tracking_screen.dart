@@ -8,7 +8,7 @@ import 'package:sleept/constants/colors.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:sleept/features/tracking/components/build_tracking_content.dart';
 import 'dart:typed_data';
-import 'package:sleept/services/habit_database.dart';
+import 'package:sleept/features/habit/service/habit_database.dart';
 import 'package:sleept/models/snoring_event.dart';
 import 'package:flutter_sound/flutter_sound.dart';
 import 'components/build_time_selection_background.dart';
