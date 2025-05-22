@@ -658,7 +658,7 @@ class _HabitTrackinglScreenState extends State<HabitTrackinglScreen> {
                                         : isCompleted ?
                                     const Color(0xFFB092FF) // Text color for completed days
                                         : isFutureDay ?
-                                    Colors.white70?.withOpacity(0.5) // Text color for future days
+                                    Colors.white70.withOpacity(0.5) // Text color for future days
                                         : Colors.white70, // Text color for past incomplete days
                                     fontSize: 20,
                                     fontFamily: 'Renogare Soft',

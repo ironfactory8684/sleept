@@ -3,10 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:sleept/constants/colors.dart';
 import 'package:sleept/constants/habit_datas.dart';
-import 'package:sleept/constants/text_styles.dart';
 import 'package:sleept/features/habit/components/habit_item.dart';
-
-import 'model/habit_data.dart';
 import 'components/habit_dialog.dart';
 import 'package:sleept/features/habit/service/habit_database.dart';
 

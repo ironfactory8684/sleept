@@ -9,6 +9,7 @@ class AppColors {
   static const Color tabBarBackground = Color(0xFF181621);
   static const Color primaryGray850 = Color(0xff2C2838);
   static const Color primaryGray750 = Color(0xff413D4F);
+
   // Primary Colors
   static const Color primary = Color(0xFF724BFF);
   static const Color primaryGradientStart = Color(0xFF724EFF);

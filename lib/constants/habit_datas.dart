@@ -1,6 +1,5 @@
 import 'dart:ui';
 
-import '../utils/app_colors.dart';
 
 Map habitData ={
   '운동':{

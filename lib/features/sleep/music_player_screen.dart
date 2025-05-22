@@ -5,6 +5,8 @@ import '../../utils/app_colors.dart'; // AppColors 임포트 (필요시 경로 �
 import 'dart:ui'; // ImageFilter 사용 위해 추가
 import 'package:sleept/features/sleep/service/favorites_database.dart';
 
+import 'components/music_player_progress.dart';
+
 class MusicPlayerScreen extends StatefulWidget {
   final String imagePath;
   final String title;
@@ -120,6 +122,7 @@ class _MusicPlayerScreenState extends State<MusicPlayerScreen> {
     const double progressBarHeight = 4.0; // Rectangle 129 높이
 
     return Scaffold(
+
       body: Stack(
         children: [
           // 배경 이미지 및 블러 효과 (피그마 Rectangle 128)
@@ -133,7 +136,7 @@ class _MusicPlayerScreenState extends State<MusicPlayerScreen> {
             child: BackdropFilter(
               filter: ImageFilter.blur(sigmaX: 14, sigmaY: 14), // 피그마 effect_DANMM6
               child: Container(
-                color: Colors.black.withOpacity(0.3), // 피그마 배경 위 어두운 오버레이 유사하게
+                color: Colors.black.withOpacity(0.6), // 피그마 배경 위 어두운 오버레이 유사하게
               ),
             ),
           ),
@@ -146,15 +149,25 @@ class _MusicPlayerScreenState extends State<MusicPlayerScreen> {
                 // 상단 네비게이션 바 (피그마 navigation-bar)
                 _buildAppBar(context),
 
-                const Spacer(flex: 2), // 공간 확보
-
-                // 앨범 아트 (피그마 Ellipse 105/106/107)
-                _buildAlbumArt(albumArtSize),
-
-                const Spacer(flex: 1),
+                SizedBox(height: 34.0,),
 
                 // 제목 및 카테고리
                 _buildTitleAndCategory(),
+
+
+                // 앨범 아트 (피그마 Ellipse 105/106/107)
+                CircularMusicPlayer(
+                  imageUrl:   widget.imagePath,
+                  progress: 135 / 180, // 현재 재생시간 / 전체
+                  current: Duration(minutes: 2, seconds: 15),
+                  total: Duration(minutes: 3),
+                ),
+
+                // _buildAlbumArt(albumArtSize),
+
+                const Spacer(flex: 1),
+
+
 
                 const Spacer(flex: 2),
 
@@ -162,14 +175,14 @@ class _MusicPlayerScreenState extends State<MusicPlayerScreen> {
                 _buildProgressBar(progressBarHeight),
 
                  const SizedBox(height: 30), // 간격 조정
-
+                // 자동 종료 토글 (피그마 Frame 254 & Text)
+                _buildAutoOffToggle(),
                 // 재생 컨트롤 버튼 (피그마 Frame 88)
                 _buildControls(),
 
                 const Spacer(flex: 1),
 
-                // 자동 종료 토글 (피그마 Frame 254 & Text)
-                _buildAutoOffToggle(),
+
 
                  const SizedBox(height: 40), // 하단 여유 공간
               ],
@@ -181,15 +194,16 @@ class _MusicPlayerScreenState extends State<MusicPlayerScreen> {
   }
 
   Widget _buildAppBar(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 10.0),
+    return Container(
+      padding: EdgeInsets.only(top: 14,bottom: 18, right: 6, left: 6),
+      height: 56.0,
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           // 뒤로가기 버튼 (icon-con-left)
           IconButton(
              icon: SvgPicture.asset(
-                'assets/images/arrow_left_icon.svg', // 에셋 경로 확인 필요
+                'assets/images/arrow_down_icon.svg', // 에셋 경로 확인 필요
                  width: 24, height: 24, colorFilter: ColorFilter.mode(AppColors.textWhite, BlendMode.srcIn)),
              onPressed: () => Navigator.of(context).pop(),
              padding: EdgeInsets.zero,
@@ -197,7 +211,7 @@ class _MusicPlayerScreenState extends State<MusicPlayerScreen> {
           ),
           // 페이지 이름 (page-name) - 현재 재생 중인 곡 표시 가능
           Text(
-            'Now Playing', // 또는 widget.title
+          widget.category,
             style: TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.w700,
@@ -229,41 +243,8 @@ class _MusicPlayerScreenState extends State<MusicPlayerScreen> {
          child: Stack(
            alignment: Alignment.center,
            children: [
-             // 빛 효과 (Ellipse 108) - 단순 그림자로 대체
-             Container(
-               width: size + 8,
-               height: size + 8,
-               decoration: BoxDecoration(
-                 shape: BoxShape.circle,
-                 boxShadow: [
-                   BoxShadow(
-                     color: AppColors.textWhite.withOpacity(0.19), // 피그마 effect_U0ZSX6 유사
-                     blurRadius: 8.0,
-                     spreadRadius: 5.0,
-                   ),
-                 ],
-               ),
-             ),
-             // 회색 테두리 (Ellipse 106)
-             Container(
-               width: size + 8, // size + 4px border * 2
-               height: size + 8,
-               decoration: BoxDecoration(
-                 shape: BoxShape.circle,
-                 border: Border.all(color: AppColors.heartIconBorder, width: 4), // disabledGray -> heartIconBorder (#7E7993)
-               ),
-             ),
-             // 그라데이션 테두리 (Ellipse 107)
-             Container(
-               width: size, // size
-               height: size,
-               decoration: BoxDecoration(
-                 shape: BoxShape.circle,
-                 border: Border.all(color: Colors.transparent, width: 4), // 투명 테두리
-                 // TODO: 피그마 그라데이션 테두리 구현 (CustomPaint 또는 라이브러리 사용)
-                 // gradient: SweepGradient(...) or LinearGradient(...)
-               ),
-             ),
+
+
              // 앨범 이미지 (Ellipse 105)
              ClipOval(
                child: Image.asset(
@@ -288,34 +269,20 @@ class _MusicPlayerScreenState extends State<MusicPlayerScreen> {
   }
 
  Widget _buildTitleAndCategory() {
-     return Column(
-       mainAxisSize: MainAxisSize.min,
-       children: [
-         Padding(
-           padding: const EdgeInsets.symmetric(horizontal: 40.0), // 넓은 여백 고려
-           child: Text(
-             widget.title,
-             textAlign: TextAlign.center,
-             style: TextStyle(
-               fontSize: 22,
-               fontWeight: FontWeight.w700,
-               color: AppColors.textWhite, // style_CR7KAC
-               height: 1.5,
-             ),
-             maxLines: 2,
-             overflow: TextOverflow.ellipsis,
-           ),
+     return Padding(
+       padding: const EdgeInsets.only(right: 95, left: 97), // 넓은 여백 고려
+       child: Text(
+         widget.title,
+         textAlign: TextAlign.center,
+         style: TextStyle(
+           fontSize: 22,
+           fontWeight: FontWeight.w700,
+           color: AppColors.textWhite, // style_CR7KAC
+           height: 1.5,
          ),
-         const SizedBox(height: 8),
-         Text(
-           widget.category,
-           style: TextStyle(
-             fontSize: 16,
-             fontWeight: FontWeight.w700,
-             color: AppColors.textWhite.withOpacity(0.8), // 피그마 색상 유사하게 (style_FMDESN)
-           ),
-         ),
-       ],
+         maxLines: 2,
+         overflow: TextOverflow.ellipsis,
+       ),
      );
  }
 
