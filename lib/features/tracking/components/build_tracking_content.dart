@@ -10,6 +10,7 @@ class BuildTrackingContent extends StatelessWidget {
   final String displayMinute;
   final String displayAmPm;
   final bool isSnoring;
+  final bool isTalking;
   final Duration remainingTime;
   const BuildTrackingContent({
     super.key,
@@ -17,7 +18,9 @@ class BuildTrackingContent extends StatelessWidget {
     required this.displayHour,
     required this.displayMinute,
     required this.displayAmPm,
-    required this.isSnoring, required this.remainingTime,
+    required this.isSnoring,
+    required this.isTalking,
+    required this.remainingTime,
   });
 
   @override
@@ -27,11 +30,23 @@ class BuildTrackingContent extends StatelessWidget {
       children: [
         if (isSnoring)
           Padding(
-            padding: const EdgeInsets.only(bottom: 16.0),
+            padding: const EdgeInsets.only(bottom: 8.0),
             child: Text(
               '😴 코골이 감지 중',
               style: TextStyle(
                 color: Colors.redAccent,
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+        if (isTalking)
+          Padding(
+            padding: const EdgeInsets.only(bottom: 16.0),
+            child: Text(
+              '🗣️ 잠꼬대 감지 중',
+              style: TextStyle(
+                color: Colors.orangeAccent,
                 fontSize: 16,
                 fontWeight: FontWeight.bold,
               ),
