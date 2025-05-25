@@ -49,6 +49,7 @@ dependencies:
   supabase_flutter: ^2.3.4
   uuid: ^4.3.3
   flutter_dotenv: ^5.1.0
+  kakao_flutter_sdk: ^1.9.7+3
 
 dev_dependencies:
   flutter_test:
@@ -76,6 +77,7 @@ flutter:
   assets:
     - assets/music/
     - assets/images/
+    - assets/svg/
     - .env
   
   # 폰트 추가
