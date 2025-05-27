@@ -54,8 +54,6 @@ class _LoginScreenState extends State<LoginScreen> {
 
     try {
       await SupabaseService.instance.signInWithKakao();
-      
-
     } catch (e) {
       setState(() {
         _errorMessage = '로그인에 실패했습니다. 이메일과 비밀번호를 확인해주세요.';

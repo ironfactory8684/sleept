@@ -42,7 +42,7 @@
                 <category android:name="android.intent.category.BROWSABLE" />
                 <data
                     android:scheme="sleeptapp"
-                    android:host="callback" />
+                    android:host="sleeptapp.com/auth/verify" />
             </intent-filter>
         </activity>
         <!-- Don't delete the meta-data below.

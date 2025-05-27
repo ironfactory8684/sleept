@@ -1,4 +1,7 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
+import 'package:sign_in_with_apple/sign_in_with_apple.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:sleept/models/sleep_session.dart';
 import 'package:sleept/models/snoring_event.dart';
@@ -6,6 +9,8 @@ import 'package:sleept/models/sleep_talking_event.dart';
 import 'package:uuid/uuid.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter/foundation.dart';
+import 'package:crypto/crypto.dart';
+import 'package:kakao_flutter_sdk/kakao_flutter_sdk.dart' hide User;
 
 /// Service class for Supabase operations
 class SupabaseService {
@@ -129,15 +134,32 @@ class SupabaseService {
     return response;
   }
 
-  Future<void> signInWithKakao() async {
+  Future<AuthResponse> signInWithKakao() async {
     try {
-      var result = await client.auth.signInWithOAuth(
-        OAuthProvider.kakao,
-        redirectTo: dotenv.env['SUPABASE_URL'],
-        // redirectTo: 'sleeptapp://callback',
-         authScreenLaunchMode: LaunchMode.inAppWebView,
+      final rawNonce = client.auth.generateRawNonce();
+      bool isInstalled = await isKakaoTalkInstalled();
+      OAuthToken? token;
+
+      if (isInstalled) {
+        try {
+          token = await UserApi.instance.loginWithKakaoTalk();
+          print(token);
+        } catch (error) {
+          // 카카오톡에 로그인 실패하면 웹 계정 로그인
+          token = await UserApi.instance.loginWithKakaoAccount();
+        }
+      } else {
+        // 카카오톡 미설치: 웹 계정 로그인
+        token = await UserApi.instance.loginWithKakaoAccount();
+      }
+
+
+      return await client.auth.signInWithIdToken(
+        provider: OAuthProvider.kakao,
+        idToken: token.accessToken,
+        nonce: rawNonce,
       );
-      print(result);
+
     } on AuthException catch (e) {
       print('SupabaseService: 카카오 로그인 에러: ${e.message}');
       // UI 레이어에서 에러 메시지를 SnackBar 등으로 표시할 수 있도록 Throws
@@ -148,14 +170,34 @@ class SupabaseService {
     }
   }
 
-  Future<void> signInWithApple() async {
+  Future<AuthResponse> signInWithApple() async {
     try {
-      var result = await client.auth.signInWithOAuth(
-        OAuthProvider.apple,
-        // redirectTo:  'https://skrydutblxnoscfwtgzi.supabase.co/auth/v1/callback',
-        authScreenLaunchMode: LaunchMode.inAppWebView,
+
+      final rawNonce = client.auth.generateRawNonce();
+      // Hash the generated nonce using SHA-256
+      final hashedNonce = sha256.convert(utf8.encode(rawNonce)).toString();
+      // Show Apple sign-in widget and request authentication from the user
+      // Return authentication information including specified scopes and nonce
+      final credential = await SignInWithApple.getAppleIDCredential(
+        scopes: [
+          AppleIDAuthorizationScopes.email,
+          AppleIDAuthorizationScopes.fullName,
+        ],
+        nonce: hashedNonce,
       );
-      print(result);
+      final idToken = credential.identityToken;
+      if (idToken == null) {
+        throw const AuthException(
+          'Could not find ID Token from generated credential.',
+        );
+      }
+
+      return await client.auth.signInWithIdToken(
+        provider: OAuthProvider.apple,
+        idToken: idToken,
+        nonce: rawNonce,
+      );
+
     } on AuthException catch (e) {
       print('SupabaseService: 애플 로그인 에러: ${e.message}');
       // UI 레이어에서 에러 메시지를 SnackBar 등으로 표시할 수 있도록 Throws

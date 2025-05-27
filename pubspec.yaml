@@ -50,6 +50,8 @@ dependencies:
   uuid: ^4.3.3
   flutter_dotenv: ^5.1.0
   kakao_flutter_sdk: ^1.9.7+3
+  sign_in_with_apple: ^7.0.1
+  crypto: ^3.0.6
 
 dev_dependencies:
   flutter_test:
