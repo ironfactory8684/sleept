@@ -62,7 +62,7 @@ class _TimeSlotPickerState extends State<TimeSlotPicker> {
           margin: EdgeInsets.only(top: 30),
           padding: const EdgeInsets.symmetric(horizontal: 10.0),
           child:  SvgPicture.asset(
-            'assets/images/colon.svg', // 경로 확인!
+            'assets/svg/colon.svg', // 경로 확인!
             width: 9,
             height: 35,
             colorFilter: const ColorFilter.mode(

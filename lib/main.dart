@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/date_symbol_data_local.dart'; // DateFormat 초기화 위해 impor
 import 'package:kakao_flutter_sdk/kakao_flutter_sdk.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:sleept/features/init/onboarding_screen.dart';
 import 'package:sleept/services/supabase_service.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:sleept/features/sign/auth_wrapper.dart';
@@ -35,12 +37,16 @@ void main() async {
   } catch (e) {
     print('Error initializing Supabase: $e');
   }
-  
-  runApp(const MyApp());
+
+  SharedPreferences prefs = await SharedPreferences.getInstance();
+  bool isInit = prefs.getBool('isInit') ?? false;
+  print(isInit);
+  runApp(MyApp(isInit:isInit));
 }
 
 class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+  final bool isInit;
+  const MyApp({super.key, required this.isInit});
 
   @override
   Widget build(BuildContext context) {
@@ -52,7 +58,7 @@ class MyApp extends StatelessWidget {
         colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFF724BFF)),
         fontFamily: 'MinSans',
       ),
-      home: const AuthWrapper(),
+      home: isInit? AuthWrapper():OnboardingScreen(),
     );
   }
 }

@@ -59,27 +59,27 @@ class _HomeNavigationState extends State<HomeNavigation> {
                 _buildTabItem(
                   index: 0,
                   label: '홈',
-                  iconPath: 'assets/images/home_icon.svg',
+                  iconPath: 'assets/svg/home_icon.svg',
                 ),
                 _buildTabItem(
                   index: 1,
                   label: '수면',
-                  iconPath: 'assets/images/moon_icon.svg',
+                  iconPath: 'assets/svg/moon_icon.svg',
                 ),
                 _buildTabItem(
                   index: 2,
                   label: '습관',
-                  iconPath: 'assets/images/habit_icon.svg',
+                  iconPath: 'assets/svg/habit_icon.svg',
                 ),
                 _buildTabItem(
                   index: 3,
                   label: '트래킹',
-                  iconPath: 'assets/images/tracking_active.svg',
+                  iconPath: 'assets/svg/tracking_active.svg',
                 ),
                 _buildTabItem(
                   index: 4,
                   label: '라이브러리',
-                  iconPath: 'assets/images/library_icon.svg',
+                  iconPath: 'assets/svg/library_icon.svg',
                 ),
               ],
             ),
