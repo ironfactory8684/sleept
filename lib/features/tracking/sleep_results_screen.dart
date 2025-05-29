@@ -1,17 +1,141 @@
 import 'package:flutter/material.dart';
 import 'package:sleept/constants/colors.dart';
 import 'package:sleept/models/sleep_session.dart';
+import 'package:sleept/services/supabase_service.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:intl/intl.dart';
 
 /// Screen to display sleep tracking results after a session is complete
-class SleepResultsScreen extends StatelessWidget {
-  final SleepSession session;
+class SleepResultsScreen extends StatefulWidget {
+  final SleepSession? session;
+  final String? sessionId;
+  final DateTime? initialDate;
 
   const SleepResultsScreen({
     super.key,
-    required this.session,
-  });
+    this.session,
+    this.sessionId,
+    this.initialDate,
+  }) : assert(session != null || sessionId != null, 'Either session or sessionId must be provided');
+
+  @override
+  State<SleepResultsScreen> createState() => _SleepResultsScreenState();
+}
+
+class _SleepResultsScreenState extends State<SleepResultsScreen> {
+  SleepSession? _session;
+  bool _isLoading = false;
+  DateTime _selectedDate = DateTime.now();
+  List<SleepSession> _availableSessions = [];
+  final Map<int, String> _weekdayNames = {
+    1: '월',
+    2: '화',
+    3: '수',
+    4: '목',
+    5: '금',
+    6: '토',
+    7: '일',
+  };
+
+  @override
+  void initState() {
+    super.initState();
+    _session = widget.session;
+    _selectedDate = widget.initialDate ?? (widget.session?.startTime ?? DateTime.now());
+    
+    if (widget.session == null && widget.sessionId != null) {
+      _loadSessionById(widget.sessionId!);
+    } else {
+      _loadAvailableSessions();
+    }
+  }
+
+  Future<void> _loadSessionById(String sessionId) async {
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      final session = await SupabaseService.instance.getSleepSessionById(sessionId);
+      setState(() {
+        _session = session;
+        if (session != null) {
+          _selectedDate = session.startTime;
+        }
+        _isLoading = false;
+      });
+      _loadAvailableSessions();
+    } catch (e) {
+      setState(() {
+        _isLoading = false;
+      });
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('수면 데이터를 불러오는 중 오류가 발생했습니다: $e')),
+        );
+      }
+    }
+  }
+
+  Future<void> _loadAvailableSessions() async {
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      final sessions = await SupabaseService.instance.getSleepSessions();
+      setState(() {
+        _availableSessions = sessions;
+        _isLoading = false;
+      });
+    } catch (e) {
+      setState(() {
+        _isLoading = false;
+      });
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('수면 데이터를 불러오는 중 오류가 발생했습니다: $e')),
+        );
+      }
+    }
+  }
+
+  void _selectSession(SleepSession session) {
+    setState(() {
+      _session = session;
+      _selectedDate = session.startTime;
+    });
+  }
+
+  void _selectDate(DateTime date) {
+    // Find the session closest to the selected date
+    if (_availableSessions.isNotEmpty) {
+      // Try to find a session that started on the selected date
+      final selectedDateSessions = _availableSessions.where((s) => 
+        s.startTime.year == date.year && 
+        s.startTime.month == date.month && 
+        s.startTime.day == date.day
+      ).toList();
+      
+      if (selectedDateSessions.isNotEmpty) {
+        // If multiple sessions found for the date, use the one with highest score
+        selectedDateSessions.sort((a, b) => 
+          (b.sleepScore ?? 0).compareTo(a.sleepScore ?? 0)
+        );
+        _selectSession(selectedDateSessions.first);
+      } else {
+        // If no session found for exact date, select the closest one
+        _availableSessions.sort((a, b) => 
+          (a.startTime.difference(date).abs()).compareTo(b.startTime.difference(date).abs())
+        );
+        _selectSession(_availableSessions.first);
+      }
+    }
+    
+    setState(() {
+      _selectedDate = date;
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -23,32 +147,117 @@ class SleepResultsScreen extends StatelessWidget {
         title: const Text(
           '수면 분석 결과',
           style: TextStyle(
-            color: Colors.black,
+            color: Colors.white,
             fontWeight: FontWeight.bold,
           ),
         ),
         iconTheme: const IconThemeData(
-          color: Colors.black,
+          color: Colors.white,
         ),
       ),
-      body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(20),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              _buildSessionOverview(),
-              const SizedBox(height: 20),
-              _buildSleepScoreCard(),
-              const SizedBox(height: 20),
-              _buildSleepEventsSection(),
-              const SizedBox(height: 20),
-              if (session.sleepStages != null) _buildSleepStagesChart(),
-              const SizedBox(height: 20),
-              _buildRecommendationsSection(),
-            ],
+      body: _isLoading 
+        ? const Center(child: CircularProgressIndicator())
+        : _session == null 
+            ? const Center(child: Text('수면 데이터를 찾을 수 없습니다.', style: TextStyle(color: Colors.white)))
+            : SafeArea(
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.all(20),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _buildDateSelector(),
+                      const SizedBox(height: 20),
+                      _buildSessionOverview(),
+                      const SizedBox(height: 20),
+                      _buildSleepScoreCard(),
+                      const SizedBox(height: 20),
+                      _buildSleepEventsSection(),
+                      const SizedBox(height: 20),
+                      if (_session!.sleepStages != null) _buildSleepStagesChart(),
+                      const SizedBox(height: 20),
+                      _buildRecommendationsSection(),
+                    ],
+                  ),
+                ),
+              ),
+    );
+  }
+
+  Widget _buildDateSelector() {
+    // Get the date range for the week view
+    final now = DateTime.now();
+    final List<DateTime> weekDates = [];
+    
+    // Generate dates for the week view (centered on selected date)
+    final selectedDate = _selectedDate;
+    for (int i = -3; i <= 3; i++) {
+      weekDates.add(DateTime(selectedDate.year, selectedDate.month, selectedDate.day + i));
+    }
+    
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 12),
+      decoration: BoxDecoration(
+        color: Colors.black,
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Column(
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceAround,
+            children: weekDates.map((date) {
+              final isSelected = date.year == _selectedDate.year &&
+                  date.month == _selectedDate.month &&
+                  date.day == _selectedDate.day;
+              
+              final isToday = date.year == now.year &&
+                  date.month == now.month &&
+                  date.day == now.day;
+              
+              // Check if the date has any session
+              final hasSession = _availableSessions.any((s) => 
+                s.startTime.year == date.year && 
+                s.startTime.month == date.month && 
+                s.startTime.day == date.day
+              );
+              
+              return GestureDetector(
+                onTap: hasSession ? () => _selectDate(date) : null,
+                child: Container(
+                  width: 40,
+                  height: 60,
+                  decoration: BoxDecoration(
+                    color: isSelected ? Colors.deepPurple : Colors.grey.shade800,
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text(
+                        date.day.toString(),
+                        style: TextStyle(
+                          color: hasSession 
+                            ? (isSelected || isToday ? Colors.white : Colors.grey.shade300)
+                            : Colors.grey.shade600,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        _weekdayNames[date.weekday] ?? '',
+                        style: TextStyle(
+                          color: hasSession 
+                            ? (isSelected || isToday ? Colors.white : Colors.grey.shade400)
+                            : Colors.grey.shade700,
+                          fontSize: 12,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            }).toList(),
           ),
-        ),
+        ],
       ),
     );
   }
@@ -57,11 +266,11 @@ class SleepResultsScreen extends StatelessWidget {
   Widget _buildSessionOverview() {
     final dateFormat = DateFormat('yyyy년 MM월 dd일');
     final timeFormat = DateFormat('HH:mm');
-    final formattedDate = dateFormat.format(session.startTime);
-    final formattedStartTime = timeFormat.format(session.startTime);
-    final formattedEndTime = timeFormat.format(session.endTime);
-    final hours = session.duration.inHours;
-    final minutes = session.duration.inMinutes % 60;
+    final formattedDate = dateFormat.format(_session!.startTime);
+    final formattedStartTime = timeFormat.format(_session!.startTime);
+    final formattedEndTime = timeFormat.format(_session!.endTime);
+    final hours = _session!.duration.inHours;
+    final minutes = _session!.duration.inMinutes % 60;
 
     return Card(
       elevation: 2,
@@ -98,7 +307,7 @@ class SleepResultsScreen extends StatelessWidget {
 
   /// Sleep quality score visualization
   Widget _buildSleepScoreCard() {
-    final score = session.sleepScore ?? 0.0;
+    final score = _session!.sleepScore ?? 0.0;
     
     String qualityText;
     Color qualityColor;
@@ -186,14 +395,14 @@ class SleepResultsScreen extends StatelessWidget {
                     const SizedBox(height: 12),
                     _buildQualityInfoRow(
                       '코골이', 
-                      '${session.snoringPercentage.toStringAsFixed(1)}%', 
-                      session.snoringPercentage > 30 ? Colors.red : Colors.green,
+                      '${_session!.snoringPercentage.toStringAsFixed(1)}%', 
+                      _session!.snoringPercentage > 30 ? Colors.red : Colors.green,
                     ),
                     const SizedBox(height: 4),
                     _buildQualityInfoRow(
                       '잠꼬대', 
-                      '${session.talkingPercentage.toStringAsFixed(1)}%',
-                      session.talkingPercentage > 10 ? Colors.orange : Colors.green,
+                      '${_session!.talkingPercentage.toStringAsFixed(1)}%',
+                      _session!.talkingPercentage > 10 ? Colors.orange : Colors.green,
                     ),
                   ],
                 ),
@@ -231,6 +440,9 @@ class SleepResultsScreen extends StatelessWidget {
 
   /// Sleep events (snoring, talking) summary
   Widget _buildSleepEventsSection() {
+    final snoringCount = _session!.snoringEvents.length;
+    final talkingCount = _session!.sleepTalkingEvents.length;
+
     return Card(
       elevation: 2,
       shape: RoundedRectangleBorder(
@@ -251,14 +463,14 @@ class SleepResultsScreen extends StatelessWidget {
             const SizedBox(height: 16),
             _buildEventRow(
               '코골이',
-              session.snoringEvents.length,
+              snoringCount,
               Icons.bedtime_outlined,
               Colors.red.shade100,
             ),
             const SizedBox(height: 12),
             _buildEventRow(
               '잠꼬대',
-              session.sleepTalkingEvents.length,
+              talkingCount,
               Icons.record_voice_over,
               Colors.orange.shade100,
             ),
@@ -310,15 +522,14 @@ class SleepResultsScreen extends StatelessWidget {
 
   /// Sleep stages chart (if available)
   Widget _buildSleepStagesChart() {
-    // Extract sleep stage data - these would come from sleep stage detection
     // In our simplified implementation, we're using placeholder values
-    final stages = session.sleepStages;
+    final stages = _session!.sleepStages;
     if (stages == null) return const SizedBox();
     
-    final lightSleepPct = stages['lightSleep']['percentage'] as int;
-    final deepSleepPct = stages['deepSleep']['percentage'] as int;
-    final remSleepPct = stages['remSleep']['percentage'] as int;
-    
+    final lightSleepPct = (((stages['light'] as num?) ?? 0.0) * 100).round();
+    final deepSleepPct = (((stages['deep'] as num?) ?? 0.0) * 100).round();
+    final int remSleepPct = (((stages['rem'] as num?) ?? 0.0) * 100).round();
+
     return Card(
       elevation: 2,
       shape: RoundedRectangleBorder(
@@ -425,16 +636,16 @@ class SleepResultsScreen extends StatelessWidget {
     List<String> recommendations = [];
     
     // Add recommendations based on sleep data
-    if (session.snoringPercentage > 30) {
+    if (_session!.snoringPercentage > 30) {
       recommendations.add('코골이가 많이 감지되었습니다. 옆으로 누워서 자는 자세를 취해보세요.');
       recommendations.add('취침 전 알코올 섭취를 피하고 체중 관리가 도움이 될 수 있습니다.');
     }
     
-    if (session.talkingPercentage > 10) {
+    if (_session!.talkingPercentage > 10) {
       recommendations.add('잠꼬대가 많이 발생했습니다. 스트레스 감소 및 취침 전 이완 활동이 도움이 될 수 있습니다.');
     }
     
-    if (session.duration.inHours < 6) {
+    if (_session!.duration.inHours < 6) {
       recommendations.add('수면 시간이 6시간 미만입니다. 7-8시간의 수면을 목표로 하세요.');
     }
     
