@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:sleept/services/supabase_service.dart';
 import 'package:sleept/features/sign/login_screen.dart';
+import 'package:sleept/features/sign/welcome_screen.dart';
 
 class SignupScreen extends StatefulWidget {
   const SignupScreen({super.key});
@@ -36,12 +37,15 @@ class _SignupScreenState extends State<SignupScreen> {
     });
 
     try {
+      // Sign up the user
       await SupabaseService.instance.signUpWithEmail(
         _emailController.text.trim(),
         _passwordController.text,
       );
       
       if (mounted) {
+        // For email signup, we need to consider verification
+        // Show success message
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('가입 완료! 이메일을 확인해주세요.'),
@@ -49,8 +53,26 @@ class _SignupScreenState extends State<SignupScreen> {
           ),
         );
         
-        // Navigate back to login screen
-        Navigator.of(context).pop();
+        try {
+          // Check if the user is authenticated right away
+          // This works for auto-confirmed signups
+          final isAuthenticated = SupabaseService.instance.isUserAuthenticated;
+          
+          if (isAuthenticated) {
+            // If already authenticated, go to welcome screen to set nickname
+            Navigator.of(context).pushAndRemoveUntil(
+              MaterialPageRoute(builder: (_) => const WelcomeScreen()),
+              (route) => false,
+            );
+          } else {
+            // If not authenticated (needs email verification)
+            // Navigate back to login screen
+            Navigator.of(context).pop();
+          }
+        } catch (e) {
+          // If there's an error checking authentication status, return to login screen
+          Navigator.of(context).pop();
+        }
       }
     } catch (e) {
       setState(() {

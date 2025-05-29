@@ -74,10 +74,16 @@ class SupabaseService {
   /// Save sleep session to Supabase
   Future<String> saveSleepSession(SleepSession session) async {
     final sessionId = uuid.v4();
+    final userId = client.auth.currentUser?.id;
+    
+    if (userId == null) {
+      throw Exception('User not authenticated');
+    }
 
     // Save session data
     await client.from('sleep_sessions').insert({
       'id': sessionId,
+      'user_id': userId,
       'start_time': session.startTime.toIso8601String(),
       'end_time': session.endTime.toIso8601String(),
       'session_directory': session.sessionDirectory,
@@ -224,9 +230,157 @@ class SupabaseService {
     await client.auth.resetPasswordForEmail(email);
   }
 
+  /// Update user profile with nickname
+  Future<void> updateUserProfile(String nickname) async {
+    // Get current user ID
+    final userId = client.auth.currentUser?.id;
+    if (userId == null) {
+      throw Exception('User not authenticated');
+    }
+    
+    // Update user metadata in the profiles table
+    await client.from('profiles').upsert({
+      'id': userId,
+      'nickname': nickname,
+      'updated_at': DateTime.now().toIso8601String(),
+    });
+  }
+  
+  /// Check if user profile exists (to determine if user is new)
+  Future<bool> isNewUser() async {
+    final userId = client.auth.currentUser?.id;
+    if (userId == null) {
+      throw Exception('User not authenticated');
+    }
+    
+    final response = await client
+        .from('profiles')
+        .select('nickname')
+        .eq('id', userId)
+        .maybeSingle();
+    
+    // If no profile found or nickname is empty, consider as new user
+    return response == null || (response['nickname'] == null || response['nickname'] == '');
+  }
+
   /// Check if user is authenticated
   bool get isUserAuthenticated => isAuthenticated.value;
 
   /// Get current user
   User? get user => currentUser.value;
+
+  /// Get sleep sessions for the current user
+  /// If [date] is provided, returns sessions for that specific date
+  Future<List<SleepSession>> getSleepSessions({DateTime? date}) async {
+    final userId = client.auth.currentUser?.id;
+    if (userId == null) {
+      throw Exception('User not authenticated');
+    }
+    
+    // Build query for sleep sessions
+    var query = client.from('sleep_sessions')
+        .select('''
+          *,
+          snoring_events(*),
+          sleep_talking_events(*)
+        ''')
+        .eq('user_id', userId)
+        .order('start_time', ascending: false);
+    
+    // Filter by date if specified
+    if (date != null) {
+      // Will do date filtering in memory after fetching data
+      // as the Supabase filter methods are having compatibility issues
+    }
+    
+    final response = await query;
+    
+    // Convert response to SleepSession objects
+    List<SleepSession> sessions = response.map((sessionData) {
+      // Extract and convert snoring events
+      final snoringEvents = (sessionData['snoring_events'] as List).map((e) {
+        return SnoringEvent(
+          startTime: DateTime.parse(e['start_time']),
+          endTime: DateTime.parse(e['end_time']),
+        );
+      }).toList();
+      
+      // Extract and convert sleep talking events
+      final sleepTalkingEvents = (sessionData['sleep_talking_events'] as List).map((e) {
+        return SleepTalkingEvent(
+          startTime: DateTime.parse(e['start_time']),
+          endTime: DateTime.parse(e['end_time']),
+          transcription: e['transcript'] ?? '',
+        );
+      }).toList();
+      
+      // Create SleepSession object
+      return SleepSession(
+        startTime: DateTime.parse(sessionData['start_time']),
+        endTime: DateTime.parse(sessionData['end_time']),
+        sessionDirectory: sessionData['session_directory'],
+        snoringEvents: snoringEvents,
+        sleepTalkingEvents: sleepTalkingEvents,
+        sleepScore: sessionData['sleep_score'],
+        sleepStages: sessionData['sleep_stages'],
+      );
+    }).toList();
+    
+    // If date filter is specified, filter the sessions in memory
+    if (date != null) {
+      final startOfDay = DateTime(date.year, date.month, date.day);
+      final endOfDay = startOfDay.add(const Duration(days: 1));
+      
+      sessions = sessions.where((session) {
+        return session.startTime.isAfter(startOfDay.subtract(const Duration(seconds: 1))) && 
+               session.startTime.isBefore(endOfDay);
+      }).toList();
+    }
+    
+    return sessions;
+  }
+
+  /// Get sleep session by ID
+  Future<SleepSession?> getSleepSessionById(String sessionId) async {
+    final response = await client.from('sleep_sessions')
+        .select('''
+          *,
+          snoring_events(*),
+          sleep_talking_events(*)
+        ''')
+        .eq('id', sessionId)
+        .maybeSingle();
+    
+    if (response == null) {
+      return null;
+    }
+    
+    // Extract and convert snoring events
+    final snoringEvents = (response['snoring_events'] as List).map((e) {
+      return SnoringEvent(
+        startTime: DateTime.parse(e['start_time']),
+        endTime: DateTime.parse(e['end_time']),
+      );
+    }).toList();
+    
+    // Extract and convert sleep talking events
+    final sleepTalkingEvents = (response['sleep_talking_events'] as List).map((e) {
+      return SleepTalkingEvent(
+        startTime: DateTime.parse(e['start_time']),
+        endTime: DateTime.parse(e['end_time']),
+        transcription: e['transcript'] ?? '',
+      );
+    }).toList();
+    
+    // Create SleepSession object
+    return SleepSession(
+      startTime: DateTime.parse(response['start_time']),
+      endTime: DateTime.parse(response['end_time']),
+      sessionDirectory: response['session_directory'],
+      snoringEvents: snoringEvents,
+      sleepTalkingEvents: sleepTalkingEvents,
+      sleepScore: response['sleep_score'],
+      sleepStages: response['sleep_stages'],
+    );
+  }
 }

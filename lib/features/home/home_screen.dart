@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:sleept/features/home/home_habit_screen.dart';
+import 'package:sleept/features/home/sleep_tracking_home.dart';
 import 'package:sleept/features/home/snoring_graph.dart';
 
 import '../../constants/colors.dart';
@@ -18,7 +19,7 @@ class _HomeScreenState extends State<HomeScreen>
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 2, vsync: this,initialIndex: 1);
+    _tabController = TabController(length: 2, vsync: this, initialIndex: 1);
   }
 
   @override
@@ -54,7 +55,7 @@ class _HomeScreenState extends State<HomeScreen>
                 controller: _tabController,
                 children: [
                   // Content for '나의 수면' tab
-                  const SnoringGraph(),
+                  const SleepTrackingHome(),
                   // Content for '나의 습관' tab
                   HomeHabitScreen(),
                 ],
