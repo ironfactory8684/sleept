@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
+import 'package:sleept/features/tracking/tracking_setting_screen.dart';
 
 import '../../../constants/colors.dart';
 import '../../../utils/fomating/sleept_formater.dart';
@@ -12,6 +13,7 @@ class BuildTrackingContent extends StatelessWidget {
   final bool isSnoring;
   final bool isTalking;
   final Duration remainingTime;
+
   const BuildTrackingContent({
     super.key,
     required this.stopTracking,
@@ -57,7 +59,8 @@ class BuildTrackingContent extends StatelessWidget {
         const Spacer(),
         // 시간 및 남은 시간 표시
         Text(
-          "${SleeptFormater.formatDuration(remainingTime)} 뒤에 깨어드릴게요", // 남은 시간 표시
+          "${SleeptFormater.formatDuration(remainingTime)} 뒤에 깨어드릴게요",
+          // 남은 시간 표시
           style: const TextStyle(
             color: Colors.white,
             fontSize: 16,
@@ -79,7 +82,11 @@ class BuildTrackingContent extends StatelessWidget {
         ),
 
         GestureDetector(
-          onTap: () {},
+          onTap: () {
+            Navigator.of(context).push(
+              MaterialPageRoute(builder: (context) => TrackingSettingScreen()),
+            );
+          },
           child: Container(
             width: 162,
             height: 46,
@@ -91,7 +98,7 @@ class BuildTrackingContent extends StatelessWidget {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                SvgPicture.asset('assets/images/time.svg'),
+                SvgPicture.asset('assets/svg/time.svg'),
                 SizedBox(width: 5),
                 Text(
                   '알람음 및 진동 설정',
