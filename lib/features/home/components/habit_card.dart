@@ -20,8 +20,8 @@ class HabitCard extends StatelessWidget {
           context,
           MaterialPageRoute(
             builder: (context) => HabitTrackinglScreen(
-              // Pass relevant habit data
-              habit: data,
+              // Pass habit ID
+              habitId: data.id?.toString() ?? '',
             ),
           ),
         );

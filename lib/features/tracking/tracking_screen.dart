@@ -365,7 +365,6 @@ class _TrackingScreenState extends State<TrackingScreen> {
           // Start of a snoring event
           _snoreStartTime = DateTime.now();
           setState(() => _isSnoring = true);
-          print('Snoring started at: $_snoreStartTime (Energy: $energy)');
         } else if (!snoringDetected && _isSnoring) {
           // End of a snoring event
           final endTime = DateTime.now();

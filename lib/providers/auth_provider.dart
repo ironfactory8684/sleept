@@ -8,7 +8,7 @@ final authProvider = StateNotifierProvider<AuthNotifier, AuthState>((ref) {
 });
 
 /// Provider to get the current user's nickname
-final userNicknameProvider = FutureProvider<String?>((ref) async {
+final userNicknameProvider = FutureProvider<Map?>((ref) async {
   final authState = ref.watch(authProvider);
   
   if (authState is AuthStateAuthenticated) {
@@ -16,12 +16,17 @@ final userNicknameProvider = FutureProvider<String?>((ref) async {
       // Fetch the user profile from Supabase
       final response = await SupabaseService.instance.client
           .from('profiles')
-          .select('nickname')
+          .select('nickname,created_at')
           .eq('id', authState.user.id)
           .single();
-      
-      return response['nickname'] as String?;
+
+      var now = DateTime.now();
+      var createdAt = DateTime.parse(response['created_at']);
+      var days = now.difference(createdAt).inDays;
+      response['days'] =days;
+      return response;
     } catch (e) {
+      print(e);
       return null;
     }
   }

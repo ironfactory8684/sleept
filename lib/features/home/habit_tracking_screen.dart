@@ -1,28 +1,32 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:sleept/constants/colors.dart';
-import 'package:sleept/constants/habit_datas.dart';
+import 'package:sleept/features/habit/model/habit_model.dart';
+import 'package:sleept/features/habit/service/habit_supabase_service.dart';
+import 'package:sleept/providers/habit_provider.dart';
 
-import '../habit/service/habit_database.dart';
-import '../habit/model/tracking_entry.dart';
+class HabitTrackinglScreen extends ConsumerStatefulWidget {
+  final String habitId;
 
-class HabitTrackinglScreen extends StatefulWidget {
-  final HabitModel habit;
-
-  const HabitTrackinglScreen({Key? key, required this.habit}) : super(key: key);
+  const HabitTrackinglScreen({Key? key, required this.habitId})
+    : super(key: key);
 
   @override
-  _HabitTrackinglScreenState createState() => _HabitTrackinglScreenState();
+  ConsumerState<HabitTrackinglScreen> createState() =>
+      _HabitTrackinglScreenState();
 }
 
-class _HabitTrackinglScreenState extends State<HabitTrackinglScreen> {
+class _HabitTrackinglScreenState extends ConsumerState<HabitTrackinglScreen> {
   late int currentMonth;
   late int currentYear;
   late int today;
   late int ddays;
   late int lastDayOfMonth;
-  late Map<String, dynamic> currentData;
-  List<TrackingEntry> _completedEntries = []; // List to store completed dates
-  late HabitModel habit;
+  Map<String, dynamic>? currentData;
+  List<Map<String, dynamic>> _completedEntries =
+      []; // List to store completed dates
+  HabitModel? habit;
+  bool _isSubmitting = false; // 트래킹 완료 처리 중 상태
   // Helper function to get the icon for a stamp type
   IconData? _getStampIcon(String? type) {
     switch (type) {
@@ -53,29 +57,73 @@ class _HabitTrackinglScreenState extends State<HabitTrackinglScreen> {
 
   @override
   void initState() {
-    // TODO: implement initState
     super.initState();
-    habit = widget.habit;
     var now = DateTime.now();
     currentMonth = now.month;
     currentYear = now.year;
     today = now.day;
-    var diffday =now.difference(widget.habit.endDate);
-    ddays =diffday.inDays;
     lastDayOfMonth = daysInCurrentMonth(currentMonth);
-    currentData = habitData[habit.type]['items'][habit.selectedHabit];
-    _loadTrackingData();
+
+    // Supabase에서 데이터 로드는 didChangeDependencies에서 처리
+    // 여기서는 초기화만 진행
+    _completedEntries = [];
   }
 
-  Future<void> _loadTrackingData() async {
-    if (habit.id != null) {
-      final entries = await HabitDatabase.instance.readTrackingForHabit(habit.id!);
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _loadHabitData();
+  }
+
+  // Supabase에서 특정 습관 데이터 가져오기
+  Future<void> _loadHabitData() async {
+    try {
+      // 1. 습관 상세 데이터 가져오기
+      final habitAsync = ref.read(userHabitsProvider.future);
+      final habits = await habitAsync;
+
+      // 해당 ID의 습관 찾기
+      final habitData = habits.firstWhere(
+        (h) => h['id'] == widget.habitId,
+        orElse: () => throw Exception('습관을 찾을 수 없습니다'),
+      );
+
+      // HabitModel로 변환
+      final loadedHabit = HabitModel.fromMap(habitData);
+
+      // 2. 해당 습관의 트래킹 데이터 가져오기
+      final trackingData = await HabitSupabaseService.instance.getHabitTracking(
+        widget.habitId,
+      );
+
+      // 3. 습관 타입에 따른 필요한 정보 가져오기
+      final categoriesAsync = ref.read(habitCategoriesProvider.future);
+      final categories = await categoriesAsync;
+
+      // 습관 이름으로 카테고리 정보 찾기
+      final categoryInfo = categories[loadedHabit.type];
+      final items = categoryInfo?['items'] as Map<String, dynamic>?;
+      final itemData =
+          items?[loadedHabit.selectedHabit] as Map<String, dynamic>?;
+
+      // 디데이 계산
+      final now = DateTime.now();
+      final endDate = loadedHabit.endDate;
+      final diffDay = now.difference(endDate);
+
       setState(() {
-        _completedEntries = entries;
+        habit = loadedHabit;
+        ddays = diffDay.inDays;
+        _completedEntries = trackingData;
+        currentData = itemData;
       });
+    } catch (e) {
+      print('Error loading habit data: $e');
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('데이터를 불러오는 중 오류가 발생했습니다: $e')));
     }
   }
-
 
   int daysInCurrentMonth(month) {
     // 현재 날짜와 시간을 가져옵니다.
@@ -96,102 +144,256 @@ class _HabitTrackinglScreenState extends State<HabitTrackinglScreen> {
 
   // Check if a specific day is in the completed entries list
   bool _isDayCompleted(int day) {
+    // 로드되지 않은 경우 안전하게 체크
+    if (_completedEntries.isEmpty) return false;
+
     // Get the date for the given day in the current month and year
     final dateToCheck = DateTime(currentYear, currentMonth, day);
 
     // Check if any completed entry matches this date (compare only year, month, day)
-    return _completedEntries.any((entry) =>
-    entry.completionDate.year == dateToCheck.year &&
-        entry.completionDate.month == dateToCheck.month &&
-        entry.completionDate.day == dateToCheck.day);
+    return _completedEntries.any((entry) {
+      try {
+        // Supabase에서 가져온 데이터에서 날짜 값 추출
+        final completionDateStr = entry['completion_date']?.toString();
+        if (completionDateStr == null || completionDateStr.isEmpty)
+          return false;
+
+        final completionDate = DateTime.tryParse(completionDateStr);
+        if (completionDate == null) return false;
+
+        return completionDate.year == dateToCheck.year &&
+            completionDate.month == dateToCheck.month &&
+            completionDate.day == dateToCheck.day;
+      } catch (e) {
+        print('Error checking completion date: $e');
+        return false;
+      }
+    });
   }
 
+  // Helper function to check if a day is the start of the d-day
+  bool _isStartOfDDay(int day) {
+    if (habit == null || habit?.startDate == null) return false;
+
+    final date = DateTime(currentYear, currentMonth, day);
+    final startDate = habit?.startDate;
+    if (startDate == null) return false;
+
+    return date.year == startDate.year &&
+        date.month == startDate.month &&
+        date.day == startDate.day;
+  }
+
+  // Helper function to check if a day is the end of the d-day
+  bool _isEndOfDDay(int day) {
+    if (habit == null || habit?.endDate == null) return false;
+
+    final date = DateTime(currentYear, currentMonth, day);
+    final endDate = habit?.endDate;
+    if (endDate == null) return false;
+
+    return date.year == endDate.year &&
+        date.month == endDate.month &&
+        date.day == endDate.day;
+  }
 
   // Handle the completion button press
   Future<void> _handleCompletion() async {
+    // 현재 습관이 로드되지 않았다면 오류 처리
+    if (habit == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('습관 데이터가 로드되지 않았습니다. 다시 시도해주세요.'),
+          backgroundColor: Color(0xFF724BFF),
+          duration: Duration(seconds: 2),
+        ),
+      );
+      return;
+    }
+
+    // 데이터 로딩중 중복 탭 방지
+    if (mounted && context.mounted) {
+      // 양시에 로딩 상태를 표시
+      setState(() {
+        _isSubmitting = true;
+      });
+    }
+
     // Get today's date without time
     final todayDate = DateTime(currentYear, currentMonth, today);
     // Check if today is already completed
     if (_isDayCompleted(today)) {
-      print('Habit already completed today!');
-      // Optionally show a message to the user
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('오늘의 습관을 이미 완료했습니다.'),
-          duration: Duration(seconds: 2),
-        ),
-      );
+      setState(() {
+        _isSubmitting = false;
+      });
+
+      if (mounted && context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('오늘의 습관을 이미 완료했습니다.'),
+            backgroundColor: Color(0xFF724BFF),
+            duration: Duration(seconds: 2),
+          ),
+        );
+      }
       return;
     }
-
-    // Ensure habit ID is not null before saving
-    if (habit.id == null) {
-      print('Error: Habit ID is null, cannot save tracking.');
-      // Optionally show an error message
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('습관 정보를 찾을 수 없습니다.'),
-          duration: Duration(seconds: 2),
-        ),
-      );
-      return;
-    }
-
-    // Create a new tracking entry
-    final newEntry = TrackingEntry(
-      habitId: habit.id!,
-      completionDate: todayDate, // Use today's date
-    );
 
     try {
-      // Save the tracking entry to the database
-      await HabitDatabase.instance.createTracking(newEntry);
+      // 1. Supabase에 트래킹 데이터 추가
+      final habitId = habit?.id;
+      if (habitId == null) {
+        throw Exception('습관 ID가 없습니다');
+      }
 
-      // Update the habit's count (optional, but common)
-      final updatedHabit = habit.copy(count: (habit.count ?? 0) + 1);
-      await HabitDatabase.instance.updateHabit(updatedHabit);
-
-
-      // Reload tracking data and update the UI
-      await _loadTrackingData(); // Reload all entries to update the list
-
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('오늘의 습관을 완료했습니다!'),
-          duration: Duration(seconds: 2),
-        ),
+      // Supabase에 트래킹 데이터 추가
+      await HabitSupabaseService.instance.addHabitTracking(
+        habitId: habitId.toString(),
+        completionDate: todayDate,
       );
 
+      // 2. 습관 카운트 업데이트
+      final currentHabit = habit;
+      if (currentHabit == null) {
+        throw Exception('습관 데이터가 없습니다');
+      }
 
+      final newCount = (currentHabit.count ?? 0) + 1;
+      final isCompleted =
+          currentHabit.duration != null && newCount >= currentHabit.duration!;
+
+      // 습관 데이터 업데이트
+      await HabitSupabaseService.instance.updateUserHabit(
+        habitId: habitId.toString(),
+        count: newCount,
+        isCompleted: isCompleted,
+      );
+
+      // 3. Riverpod 캐시 새로고침 (선택사항)
+      // ref.invalidate(userHabitsProvider);
+
+      // 4. 데이터 다시 불러오기
+      await _loadHabitData();
+
+      // 5. 사용자에게 완료 메시지 표시
+      if (mounted && context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('오늘의 습관이 완료되었습니다!'),
+            backgroundColor: Color(0xFF724BFF),
+            duration: Duration(seconds: 2),
+          ),
+        );
+      }
     } catch (e) {
-      print('Error saving tracking data: $e');
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('습관 완료 처리에 실패했습니다: ${e.toString()}'),
-          duration: Duration(seconds: 2),
-        ),
-      );
+      print('Error updating habit: $e');
+      // Show error to user
+      if (mounted && context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('오류가 발생했습니다: $e'),
+            backgroundColor: Colors.redAccent,
+            duration: const Duration(seconds: 2),
+          ),
+        );
+      }
+    } finally {
+      // 어떤 경우라도 로딩 상태 해제
+      if (mounted) {
+        setState(() {
+          _isSubmitting = false;
+        });
+      }
     }
   }
 
-
-
   @override
   Widget build(BuildContext context) {
+    Widget _buildDaysRow(int startDay, int endDay) {
+      return Padding(
+        padding: const EdgeInsets.only(top: 15.0),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceAround,
+          children: List.generate(7, (index) {
+            final day = startDay + index;
+            if (day <= lastDayOfMonth && day > 0) {
+              final DateTime dayDate = DateTime(currentYear, currentMonth, day);
+              bool isPast = dayDate.isBefore(
+                DateTime(currentYear, currentMonth, today + 1),
+              );
+              final bool isCompleted = _isDayCompleted(day);
+              bool isStartDDay = _isStartOfDDay(day);
+              bool isEndDDay = _isEndOfDDay(day);
 
-    // final habitData = habitData;
-    //
-    // final completionDays = habit['completionDays'] as List<Map<String, dynamic>>; // Cast for safety
-    //
-    // // Find today's day in the completionDays list (for highlighting)
-    // final today = DateTime.now().day;
-    // final todayCompletion = completionDays.firstWhere(
-    //       (dayData) => dayData['day'] == today,
-    //   orElse: () => {'day': today, 'type': null}, // Default if today not found
-    // );
-    // final todayIsStamped = todayCompletion['type'] != null; // Check if today has a stamp
-
+              return Container(
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color:
+                      isCompleted
+                          ? Colors.green
+                          : (day == today
+                              ? Color(0xff724BFF)
+                              : (!isPast
+                                  ? Colors.grey[200]
+                                  : Colors.transparent)),
+                ),
+                child: Stack(
+                  children: [
+                    if (isStartDDay || isEndDDay)
+                      Center(
+                        child: Container(
+                          width: 40,
+                          height: 40,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            border: Border.all(
+                              color: Color(0xffFFB906),
+                              width: 2,
+                            ),
+                          ),
+                        ),
+                      ),
+                    Center(
+                      child: Text(
+                        day.toString(),
+                        style: TextStyle(
+                          color:
+                              isCompleted
+                                  ? Colors.white
+                                  : (day == today
+                                      ? Colors.white
+                                      : (!isPast
+                                          ? Colors.blueGrey
+                                          : Colors.black54)),
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                    if (isCompleted &&
+                        currentData != null &&
+                        currentData!.containsKey('stamp'))
+                      Center(
+                        child: Icon(
+                          _getStampIcon(currentData!['stamp']),
+                          color: Colors.white,
+                          size: 20,
+                        ),
+                      ),
+                  ],
+                ),
+              );
+            } else {
+              return Container(
+                width: 40,
+                height: 40,
+              ); // Empty placeholder for days outside the month
+            }
+          }),
+        ),
+      );
+    }
 
     return Scaffold(
       backgroundColor: AppColors.mainBackground,
@@ -215,7 +417,7 @@ class _HabitTrackinglScreenState extends State<HabitTrackinglScreen> {
             children: [
               // Habit Information Section
               Text(
-                '습관 설정 기간 | ${habit.startDate} - ${habit.endDate}',
+                '습관 설정 기간 | ${habit?.startDate} - ${habit?.endDate}',
                 style: TextStyle(
                   color: const Color(0xFF8E8AA1) /* Primitive-Color-gray-500 */,
                   fontSize: 13,
@@ -256,7 +458,7 @@ class _HabitTrackinglScreenState extends State<HabitTrackinglScreen> {
                       decoration: ShapeDecoration(
                         image: DecorationImage(
                           image: AssetImage(
-                            "assets/images/${currentData['image']}",
+                            "assets/images/${currentData?['image']}",
                           ),
                           fit: BoxFit.cover,
                         ),
@@ -274,7 +476,7 @@ class _HabitTrackinglScreenState extends State<HabitTrackinglScreen> {
                         SizedBox(
                           width: 223,
                           child: Text(
-                            habit.selectedHabit,
+                            habit?.selectedHabit ?? '로드 중...',
                             style: TextStyle(
                               color: Colors.white /* Primitive-Color-White */,
                               fontSize: 16,
@@ -288,7 +490,7 @@ class _HabitTrackinglScreenState extends State<HabitTrackinglScreen> {
                           width: 223,
                           height: 42,
                           child: Text(
-                            currentData['descript'],
+                            currentData?['descript'] ?? '',
                             style: TextStyle(
                               color: Colors.white /* Primitive-Color-White */,
                               fontSize: 13,
@@ -415,7 +617,7 @@ class _HabitTrackinglScreenState extends State<HabitTrackinglScreen> {
                                     spacing: 7,
                                     children: [
                                       Text(
-                                        '${habit.count}번',
+                                        '${habit?.count ?? 0}번',
                                         textAlign: TextAlign.right,
                                         style: TextStyle(
                                           color: Colors.white,
@@ -436,7 +638,7 @@ class _HabitTrackinglScreenState extends State<HabitTrackinglScreen> {
                                         ),
                                       ),
                                       Text(
-                                        '${habit.duration}번',
+                                        '${habit?.duration}번',
                                         style: TextStyle(
                                           color: const Color(
                                             0xFFAAA8B4,
@@ -528,7 +730,7 @@ class _HabitTrackinglScreenState extends State<HabitTrackinglScreen> {
                                         ),
                                       ),
                                       Text(
-                                        '${habit.duration}일',
+                                        '${habit?.duration}일',
                                         style: TextStyle(
                                           color: const Color(
                                             0xFFAAA8B4,
@@ -554,13 +756,16 @@ class _HabitTrackinglScreenState extends State<HabitTrackinglScreen> {
               const SizedBox(height: 24),
 
               // Completion Stamp Calendar
-              Text('완료 스탬프', style: TextStyle(
-                color: Colors.white,
-                fontSize: 18,
-                fontFamily: 'Min Sans',
-                fontWeight: FontWeight.w700,
-                height: 1.50,
-              ),),
+              Text(
+                '완료 스탬프',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 18,
+                  fontFamily: 'Min Sans',
+                  fontWeight: FontWeight.w700,
+                  height: 1.50,
+                ),
+              ),
               const SizedBox(height: 10),
               Container(
                 decoration: BoxDecoration(
@@ -576,29 +781,33 @@ class _HabitTrackinglScreenState extends State<HabitTrackinglScreen> {
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
                           Text(
-                            '$currentMonth월',
-                            style: TextStyle(
-                              color: Colors.white,
+                            '습관명: ${habit?.selectedHabit ?? '로드 중...'}',
+                            style: const TextStyle(
                               fontSize: 16,
-                              fontFamily: 'Pretendard',
-                              fontWeight: FontWeight.w700,
-                              height: 1.50,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.white,
                             ),
                           ),
-                          Icon(Icons.arrow_drop_down,color: Colors.white,),
+                          Icon(Icons.arrow_drop_down, color: Colors.white),
                         ],
                       ),
                       const SizedBox(height: 16),
+                      _buildDaysRow(1, 7),
+                      _buildDaysRow(8, 14),
+                      _buildDaysRow(15, 21),
+                      _buildDaysRow(22, 28),
+                      _buildDaysRow(29, lastDayOfMonth),
                       GridView.builder(
                         shrinkWrap: true,
                         physics: const NeverScrollableScrollPhysics(),
                         gridDelegate:
-                        const SliverGridDelegateWithFixedCrossAxisCount(
-                          crossAxisCount: 5,
-                          crossAxisSpacing: 17.0,
-                          mainAxisSpacing: 17.0,
-                        ),
-                        itemCount: lastDayOfMonth, // Number of days in the month
+                            const SliverGridDelegateWithFixedCrossAxisCount(
+                              crossAxisCount: 5,
+                              crossAxisSpacing: 17.0,
+                              mainAxisSpacing: 17.0,
+                            ),
+                        itemCount:
+                            lastDayOfMonth, // Number of days in the month
                         itemBuilder: (context, index) {
                           final day = index + 1;
                           final isToday = day == today;
@@ -607,59 +816,94 @@ class _HabitTrackinglScreenState extends State<HabitTrackinglScreen> {
 
                           // Determine if the day is in the future relative to today
                           // This is a basic check; for robust implementation, consider the habit's start/end dates.
-                          final isFutureDay = DateTime(currentYear, currentMonth, day).isAfter(DateTime.now().subtract(const Duration(hours: 24))); // Treat today as not future
+                          final isFutureDay = DateTime(
+                            currentYear,
+                            currentMonth,
+                            day,
+                          ).isAfter(
+                            DateTime.now().subtract(const Duration(hours: 24)),
+                          ); // Treat today as not future
 
                           return InkWell(
-                            onTap: isFutureDay ? null : () {
-                              // TODO: Optional: Handle tapping on historical completed days
-                              print('Tapped day: $day (Completed: $isCompleted)');
-                            },
+                            onTap:
+                                isFutureDay
+                                    ? null
+                                    : () {
+                                      // TODO: Optional: Handle tapping on historical completed days
+                                      print(
+                                        'Tapped day: $day (Completed: $isCompleted)',
+                                      );
+                                    },
                             borderRadius: BorderRadius.circular(20.0),
                             child: Container(
                               decoration: BoxDecoration(
                                 shape: BoxShape.circle,
-                                color: isToday ?
-                                const Color(0xFF514D60) // Today's background
-                                    : isCompleted ?
-                                const Color(0xFF1E1436) // Completed day background
-                                    : isFutureDay ?
-                                Colors.grey[800]?.withOpacity(0.5) // Future day background (slightly dimmed)
-                                    : Colors.grey[800], // Past incomplete day background
+                                color:
+                                    isToday
+                                        ? const Color(
+                                          0xFF514D60,
+                                        ) // Today's background
+                                        : isCompleted
+                                        ? const Color(
+                                          0xFF1E1436,
+                                        ) // Completed day background
+                                        : isFutureDay
+                                        ? Colors.grey[800]?.withOpacity(
+                                          0.5,
+                                        ) // Future day background (slightly dimmed)
+                                        : Colors
+                                            .grey[800], // Past incomplete day background
 
-                                border: isToday ?
-                                Border.all( // Border for today
-                                  width: 2.50,
-                                  strokeAlign: BorderSide.strokeAlignCenter,
-                                  color: const Color(0xFFAAA8B4),
-                                )
-                                    : isCompleted ?
-                                Border.all( // Border for completed days
-                                  width: 2.50,
-                                  strokeAlign: BorderSide.strokeAlignCenter,
-                                  color: const Color(0xFFA892FF),
-                                )
-                                    : null, // No border for other days
-                                boxShadow: isToday ? [ // Shadow for today
-                                  BoxShadow(
-                                    color: Color(0x59FFFFFF),
-                                    blurRadius: 14,
-                                    offset: Offset(0, 0),
-                                    spreadRadius: 0,
-                                  )
-                                ] : null, // No shadow for other days
-
+                                border:
+                                    isToday
+                                        ? Border.all(
+                                          // Border for today
+                                          width: 2.50,
+                                          strokeAlign:
+                                              BorderSide.strokeAlignCenter,
+                                          color: const Color(0xFFAAA8B4),
+                                        )
+                                        : isCompleted
+                                        ? Border.all(
+                                          // Border for completed days
+                                          width: 2.50,
+                                          strokeAlign:
+                                              BorderSide.strokeAlignCenter,
+                                          color: const Color(0xFFA892FF),
+                                        )
+                                        : null, // No border for other days
+                                boxShadow:
+                                    isToday
+                                        ? [
+                                          // Shadow for today
+                                          BoxShadow(
+                                            color: Color(0x59FFFFFF),
+                                            blurRadius: 14,
+                                            offset: Offset(0, 0),
+                                            spreadRadius: 0,
+                                          ),
+                                        ]
+                                        : null, // No shadow for other days
                               ),
                               child: Center(
                                 child: Text(
                                   '$day',
                                   style: TextStyle(
-                                    color: isToday ?
-                                    const Color(0xFFDEDDE2) // Text color for today
-                                        : isCompleted ?
-                                    const Color(0xFFB092FF) // Text color for completed days
-                                        : isFutureDay ?
-                                    Colors.white70?.withOpacity(0.5) // Text color for future days
-                                        : Colors.white70, // Text color for past incomplete days
+                                    color:
+                                        isToday
+                                            ? const Color(
+                                              0xFFDEDDE2,
+                                            ) // Text color for today
+                                            : isCompleted
+                                            ? const Color(
+                                              0xFFB092FF,
+                                            ) // Text color for completed days
+                                            : isFutureDay
+                                            ? Colors.white70?.withOpacity(
+                                              0.5,
+                                            ) // Text color for future days
+                                            : Colors
+                                                .white70, // Text color for past incomplete days
                                     fontSize: 20,
                                     fontFamily: 'Renogare Soft',
                                     fontWeight: FontWeight.w400,
@@ -684,27 +928,57 @@ class _HabitTrackinglScreenState extends State<HabitTrackinglScreen> {
         padding: const EdgeInsets.all(20.0),
         child: ElevatedButton(
           style: ElevatedButton.styleFrom(
-            backgroundColor: AppColors.primary, // 버튼 배경색 (예시)
+            backgroundColor:
+                _isSubmitting
+                    ? const Color(0xFF4D34B3)
+                    : const Color(0xFF724BFF),
             padding: const EdgeInsets.symmetric(vertical: 16),
-            textStyle: const TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-            ),
+            elevation: _isSubmitting ? 0 : 4,
+            shadowColor:
+                _isSubmitting
+                    ? Colors.transparent
+                    : Colors.black.withOpacity(0.3),
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(12),
             ),
           ),
-          onPressed: _handleCompletion,
-          child: const Text(
-            '오늘도 습관 실행완료!',
-            style: TextStyle(
-              color: Colors.white,
-              fontSize: 16,
-              fontFamily: 'Min Sans',
-              fontWeight: FontWeight.w700,
-              height: 1.50,
-            ),
-          ),
+          onPressed: _isSubmitting ? null : _handleCompletion,
+          child:
+              _isSubmitting
+                  ? const Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(
+                          color: Colors.white,
+                          strokeWidth: 2,
+                        ),
+                      ),
+                      SizedBox(width: 12),
+                      Text(
+                        '완료 처리중...',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 16,
+                          fontFamily: 'Min Sans',
+                          fontWeight: FontWeight.w700,
+                          height: 1.50,
+                        ),
+                      ),
+                    ],
+                  )
+                  : const Text(
+                    '오늘도 습관 실행완료!',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 16,
+                      fontFamily: 'Min Sans',
+                      fontWeight: FontWeight.w700,
+                      height: 1.50,
+                    ),
+                  ),
         ),
       ),
     );
