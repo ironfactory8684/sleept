@@ -26,6 +26,15 @@ final habitItemsProvider = FutureProvider.family<Map<String, dynamic>, String>(
 // 선택된 습관 상태 프로바이더
 final selectedHabitProvider = StateProvider<String?>((ref) => null);
 
+// 단일 습관 데이터 프로바이더 (ID로 조회)
+final singleHabitProvider = FutureProvider.family<Map<String, dynamic>, String>(
+  (ref, habitId) async {
+    final habit = await HabitSupabaseService.instance.getUserSingleHabit(habitId);
+
+    return habit;
+  },
+);
+
 // 습관 트래킹 데이터 프로바이더
 final habitTrackingProvider = FutureProvider.family<List<Map<String, dynamic>>, String>(
   (ref, habitId) async {

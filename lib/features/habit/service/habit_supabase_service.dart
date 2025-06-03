@@ -108,6 +108,25 @@ class HabitSupabaseService {
     return response.map((habit) => Map<String, dynamic>.from(habit)).toList();
   }
 
+  /// 사용자의 단일 습관 가져오기
+  Future<Map<String, dynamic>> getUserSingleHabit(habitId) async {
+    final userId = currentUserId;
+    if (userId == null) {
+      throw Exception('사용자가 로그인하지 않았습니다.');
+    }
+
+    final response = await client
+        .from('user_habits')
+        .select('*')
+        .eq('user_id', userId)
+        .eq('id',habitId)
+        .order('created_at', ascending: false).single();
+
+    print(response);
+
+    return response;
+  }
+
   /// 사용자 습관 업데이트
   Future<void> updateUserHabit({
     required String habitId,

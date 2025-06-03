@@ -98,15 +98,16 @@ class _HomeHabitScreenState extends ConsumerState<HomeHabitScreen> {
       // HabitDatabase의 HabitModel 형식으로 변환
       final habitModels = habitsData.map((data) {
         // Supabase 데이터를 HabitModel에 맞게 변환
-        final habitId = data['id'] != null ? int.tryParse(data['id'].toString()) : null;
+        final habitId = data['id'] ?? '';
         final type = data['type']?.toString() ?? '';
-        final selectedHabit = data['selectedHabit']?.toString() ?? '';
-        final startDateStr = data['startDate']?.toString();
-        final endDateStr = data['endDate']?.toString();
+        final selectedHabit = data['selected_habit']?.toString() ?? '';
+        final startDateStr = data['start_date']?.toString();
+        final endDateStr = data['end_date']?.toString();
         final count = data['count'] is int ? data['count'] : 0;
         final duration = data['duration'] is int ? data['duration'] : 0;
-        final isCompleted = data['isCompleted'] == true;
-        
+        final isCompleted = data['is_completed'] == true;
+
+        print(data);
         return HabitModel(
           id: habitId,
           type: type,
@@ -340,6 +341,7 @@ class _HomeHabitScreenState extends ConsumerState<HomeHabitScreen> {
                     itemBuilder: (context, index) {
                       // 습관 데이터 사용
                       final habit = _displayedHabits[index];
+
                       return HabitCard(data: habit);
                     },
                   ),
