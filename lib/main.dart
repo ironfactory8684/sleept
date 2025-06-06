@@ -1,22 +1,25 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/date_symbol_data_local.dart'; // DateFormat 초기화 위해 impor
 import 'package:kakao_flutter_sdk/kakao_flutter_sdk.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:sleept/features/habit/habit_screen.dart';
+import 'package:sleept/features/habit/my_habits_screen.dart';
 import 'package:sleept/features/init/onboarding_screen.dart';
 import 'package:sleept/services/supabase_service.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:sleept/features/sign/auth_wrapper.dart';
+import 'package:sleept/features/sign/login_screen.dart';
+
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   SystemChrome.setSystemUIOverlayStyle(
-    const SystemUiOverlayStyle(
-      statusBarColor: Colors.transparent,
-    ),
+    const SystemUiOverlayStyle(statusBarColor: Colors.transparent),
   );
 
   await initializeDateFormatting('ko_KR', null); // 한국어 로케일 초기화
-  
+
   // Load environment variables from .env file
   try {
     await dotenv.load(fileName: ".env");
@@ -40,8 +43,7 @@ void main() async {
 
   SharedPreferences prefs = await SharedPreferences.getInstance();
   bool isInit = prefs.getBool('isInit') ?? false;
-  print(isInit);
-  runApp(MyApp(isInit:isInit));
+  runApp(ProviderScope(child: MyApp(isInit: isInit)));
 }
 
 class MyApp extends StatelessWidget {
@@ -58,7 +60,12 @@ class MyApp extends StatelessWidget {
         colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFF724BFF)),
         fontFamily: 'MinSans',
       ),
-      home: isInit? AuthWrapper():OnboardingScreen(),
+      home: isInit ? AuthWrapper() : OnboardingScreen(),
+      routes: {
+        '/habit': (context) => const HabitScreen(),
+        '/my_habits': (context) => const MyHabitsScreen(),
+        '/login': (context) => const LoginScreen(),
+      },
     );
   }
 }

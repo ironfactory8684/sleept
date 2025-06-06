@@ -20,8 +20,8 @@ class HabitCard extends StatelessWidget {
           context,
           MaterialPageRoute(
             builder: (context) => HabitTrackinglScreen(
-              // Pass relevant habit data
-              habit: data,
+              // Pass habit ID
+              habitId: data.id?.toString() ?? '',
             ),
           ),
         );
@@ -60,10 +60,10 @@ class HabitCard extends StatelessWidget {
                         height: 24,
                         clipBehavior: Clip.antiAlias,
                         decoration: BoxDecoration(),
-                        child:   SvgPicture.asset( 'assets/images/icon_clover.svg',), // 아이콘 예시
+                        child:   SvgPicture.asset('assets/svg/icon_clover.svg',), // 아이콘 예시
                       ),
                       Text(
-                        '줄넘기 100회',
+                        data.selectedHabit,
                         style: TextStyle(
                           color: Colors.white /* Primitive-Color-White */,
                           fontSize: 16,
@@ -145,52 +145,15 @@ class HabitCard extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.center,
                 spacing: 5,
                 children: [
-                  Container(
-                    width: 48,
-                    height: 4,
-                    decoration: ShapeDecoration(
-                      color: const Color(0xFFECFF87) /* Primitive-Color-Sub-Color-Lime */,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(2)),
-                    ),
-                  ),
-                  Container(
-                    width: 48,
-                    height: 4,
-                    decoration: ShapeDecoration(
-                      color: const Color(0xFFECFF87) /* Primitive-Color-Sub-Color-Lime */,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(2)),
-                    ),
-                  ),
-                  Container(
-                    width: 48,
-                    height: 4,
-                    decoration: ShapeDecoration(
-                      color: const Color(0xFF514D60) /* Primitive-Color-gray-700 */,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(2)),
-                    ),
-                  ),
-                  Container(
-                    width: 48,
-                    height: 4,
-                    decoration: ShapeDecoration(
-                      color: const Color(0xFF403C4F) /* Primitive-Color-gray-750 */,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(2)),
-                    ),
-                  ),
-                  Container(
-                    width: 48,
-                    height: 4,
-                    decoration: ShapeDecoration(
-                      color: const Color(0xFF403C4F) /* Primitive-Color-gray-750 */,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(2)),
-                    ),
-                  ),
-                  Container(
-                    width: 48,
-                    height: 4,
-                    decoration: ShapeDecoration(
-                      color: const Color(0xFF403C4F) /* Primitive-Color-gray-750 */,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(2)),
+                  for(int i=0; i<5;i++ )
+                  Expanded(
+                    child: Container(
+                      height: 4,
+                      decoration: ShapeDecoration(
+                        color: isCountPercentPicesColor(data.count,data.duration,i)?
+                        Color(0xFFECFF87):Color(0xFF403C4F) /* Primitive-Color-Sub-Color-Lime */,
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(2)),
+                      ),
                     ),
                   ),
                 ],
@@ -200,6 +163,24 @@ class HabitCard extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  bool isCountPercentPicesColor(count,duration,index){
+    var percent = ((count/duration)*100);
+    var pice =0;
+    if(percent<=20){
+     pice = 1;
+    }else if(percent<=40){
+      pice = 2;
+    }else if(percent<=60){
+      pice = 3;
+    }else if(percent<=80){
+      pice = 4;
+    }else if(percent<=100){
+      pice = 5;
+    }
+
+    return index<pice;
   }
 
   String countPercent(count,duration){

@@ -2,12 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:sleept/constants/colors.dart';
 import 'package:sleept/features/habit/habit_screen.dart';
-import 'package:sleept/features/home/home_habit_screen.dart';
 import 'package:sleept/features/tracking/tracking_screen.dart';
 import 'package:sleept/features/sleep/sleep_screen.dart';
-
 import '../home/home_screen.dart';
-import '../library/library_screen.dart';
+import '../mypage/mypage_screen.dart';
 class HomeNavigation extends StatefulWidget {
   const HomeNavigation({super.key});
 
@@ -24,7 +22,7 @@ class _HomeNavigationState extends State<HomeNavigation> {
     const SleepScreen(),
     const HabitScreen(),
     const TrackingScreen(),
-    const LibraryScreen(),
+    const MypageScreen(),
   ];
 
   @override
@@ -59,27 +57,27 @@ class _HomeNavigationState extends State<HomeNavigation> {
                 _buildTabItem(
                   index: 0,
                   label: '홈',
-                  iconPath: 'assets/svg/home_icon.svg',
+                  iconPath: 'home',
                 ),
                 _buildTabItem(
                   index: 1,
                   label: '수면',
-                  iconPath: 'assets/svg/moon_icon.svg',
+                  iconPath: 'moon',
                 ),
                 _buildTabItem(
                   index: 2,
                   label: '습관',
-                  iconPath: 'assets/svg/habit_icon.svg',
+                  iconPath: 'habit',
                 ),
                 _buildTabItem(
                   index: 3,
                   label: '트래킹',
-                  iconPath: 'assets/svg/tracking_active.svg',
+                  iconPath: 'tracking',
                 ),
                 _buildTabItem(
                   index: 4,
-                  label: '라이브러리',
-                  iconPath: 'assets/svg/library_icon.svg',
+                  label: '마이페이지',
+                  iconPath: 'library',
                 ),
               ],
             ),
@@ -121,19 +119,20 @@ class _HomeNavigationState extends State<HomeNavigation> {
           mainAxisSize: MainAxisSize.min,
           children: [
             SvgPicture.asset(
-              iconPath,
+              'assets/svg/nav_${iconPath}_${isSelected?'active':'inactive'}.svg',
               width: 24,
               height: 24,
-              colorFilter: ColorFilter.mode(
-                isSelected ? AppColors.primary : AppColors.inactiveIcon,
-                BlendMode.srcIn,
-              ),
+              // colorFilter: ColorFilter.mode(
+              //   isSelected ? AppColors.primary : AppColors.inactiveIcon,
+              //   BlendMode.srcIn,
+              // ),
             ),
             const SizedBox(height: 4),
             Text(
               label,
               style: TextStyle(
                 fontSize: 12,
+                fontFamily: 'Min Sans',
                 fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
                 color: isSelected ? AppColors.primary : AppColors.inactiveTabText,
               ),

@@ -22,67 +22,63 @@ class CategoryItemCard extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        width: double.infinity,
-        padding: const EdgeInsets.all(18),
+        height: 192,
+        padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: AppColors.cardBackground,
-          borderRadius: BorderRadius.circular(16),
+          color: Color(0xFF242030),
+          borderRadius: BorderRadius.circular(12),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            // 아이콘
             Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Row(
-                  children: [
-                    SvgPicture.asset(
-                      habit['iconPath'],
-                      width: 24,
-                      height: 24,
-                    ),
-                    const SizedBox(width: 2),
-                    Text(
-                      type,
-                      style: AppTextStyles.cardItemTitle.copyWith(color: habit['iconColor']),
-                    ),
-                  ],
-                ),
                 SvgPicture.asset(
-                  'assets/images/arrow.svg',
-                  width: 24,
-                  height: 24,
-                  colorFilter: const ColorFilter.mode(AppColors.tagText, BlendMode.srcIn),
+                  habit['iconPath'],
+                  width: 13,
+                  height: 13,
+                ),
+                const SizedBox(width: 2),
+                Text(
+                  type,
+                  style: AppTextStyles.cardItemTitle.copyWith(color: habit['iconColor']),
                 ),
               ],
             ),
-            const SizedBox(height: 16),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  habit['subtitle'],
-                  style: AppTextStyles.cardItemDescription,
-                ),
-                const SizedBox(height: 10),
-                SingleChildScrollView(
-                  scrollDirection: Axis.horizontal,
-                  child:
-                Row(
-                  children: habit['tags'].map<Widget>((tag) => Padding( // Explicitly map to Widget
-                    padding: const EdgeInsets.only(right: 8),
-                    child: Text(
-                      tag.toString(), // Ensure tag is treated as a String
-                      style: AppTextStyles.tagText,
-                    ),
-                  )).toList(), // .toList() will now produce List<Widget>
-                )
-                ),
-              ],
+            const SizedBox(height: 12),
+            // 제목
+            Text(
+              habit['subtitle'],
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 16,
+                fontFamily: 'Min Sans',
+                fontWeight: FontWeight.w700,
+                height: 1.3,
+              ),
+            ),
+            const Spacer(),
+            // 해시태그
+            Wrap(
+              spacing: 4,
+              runSpacing: 4,
+              children: (habit['tags'] as List<String>).map((tag) {
+                return Text(
+                  tag,
+                  style: const TextStyle(
+                    color: Color(0xFFCECDD4),
+                    fontSize: 12,
+                    fontFamily: 'Min Sans',
+                    fontWeight: FontWeight.w400,
+                  ),
+                );
+              }).toList(),
             ),
           ],
         ),
       ),
+
     );
   }
 }

@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../../components/am_pm_selector.dart';
 import '../../../constants/colors.dart';
 import 'build_time_picker_section.dart';
+import '../tracking_setting_screen.dart';
 
 class BuildTimeSelectionContent extends StatelessWidget {
   final VoidCallback startTracking;
@@ -26,13 +27,32 @@ class BuildTimeSelectionContent extends StatelessWidget {
   Widget build(BuildContext context) {
     return Column(
       children: [
-        const SizedBox(height: 60),
-        const Text(
-          '몇 시에 일어날까요?',
-          style: TextStyle(
-            color: Colors.white,
-            fontSize: 24,
-            fontWeight: FontWeight.bold,
+        Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const SizedBox(width: 40), // Balancing the row
+              const Text(
+                '몇 시에 일어날까요?',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 24,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              IconButton(
+                icon: const Icon(Icons.settings, color: Colors.white),
+                onPressed: () {
+                  Navigator.push(
+                    context, 
+                    MaterialPageRoute(
+                      builder: (context) => const TrackingSettingScreen(),
+                    ),
+                  );
+                },
+              ),
+            ],
           ),
         ),
         const SizedBox(height: 40),

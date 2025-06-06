@@ -98,14 +98,14 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                   StepProgressButton(
                     totalSteps: 2,
                     currentStep: step,
-                    onPressed: () {
+                    onPressed: () async {
                       // This onTap logic is from your previous conversation.
                       // You can modify it to cycle through different button states if needed.
                       if (step < 2) {
                         step++;
                       } else {
-                        SharedPreferencesAsync pref = SharedPreferencesAsync();
-                        pref.setBool('isInit', true);
+                        final pref = await SharedPreferences.getInstance();
+                        await pref.setBool('isInit', true);
                         Navigator.pushAndRemoveUntil(
                           context,
                           MaterialPageRoute(builder: (context) => AuthWrapper()),

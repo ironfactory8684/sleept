@@ -7,7 +7,7 @@ import '../model/tracking_entry.dart';
 import '../../../models/snoring_event.dart';
 
 class HabitModel {
-  final int? id;
+  final String? id;
   final int? duration;
   final int? count;
   final String type;
@@ -28,7 +28,7 @@ class HabitModel {
   });
 
   HabitModel copy({
-    int? id,
+    String? id,
     int? duration,
     int? count,
     DateTime? startDate,
@@ -57,7 +57,7 @@ class HabitModel {
       };
 
   static HabitModel fromMap(Map<String, dynamic> map) => HabitModel(
-        id: map['id'] as int,
+        id: map['id'] as String?,
         duration: map['duration'] as int,
         count: map['count'] as int,
         type: map['type'] as String,
@@ -155,11 +155,11 @@ class HabitDatabase {
     }
   }
 
-  Future<HabitModel> create(HabitModel habit) async {
-    final db = await instance.database;
-    final id = await db.insert('habits', habit.toMap());
-    return habit.copy(id: id);
-  }
+  // Future<HabitModel> create(HabitModel habit) async {
+  //   final db = await instance.database;
+  //   final id = await db.insert('habits', habit.toMap());
+  //   return habit.copy(id: id);
+  // }
 
   Future<List<HabitModel>> readAllHabits() async {
     final db = await instance.database;

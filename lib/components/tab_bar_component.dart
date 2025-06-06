@@ -27,27 +27,27 @@ class TabBarComponent extends StatelessWidget {
           _buildTabItem(
             index: 0,
             label: '홈',
-            iconPath: 'assets/images/home_icon.svg',
+            iconPath: 'assets/images/nav_home_inactive.svg',
           ),
           _buildTabItem(
             index: 1,
             label: '수면',
-            iconPath: 'assets/images/moon_icon.svg',
+            iconPath: 'assets/images/nav_moon_inactive.svg',
           ),
           _buildTabItem(
             index: 2,
             label: '습관',
-            iconPath: 'assets/images/habit_active.svg',
+            iconPath: 'assets/images/nav_habit_active.svg',
           ),
           _buildTabItem(
             index: 3,
             label: '트래킹',
-            iconPath: 'assets/images/tracking_icon.svg',
+            iconPath: 'assets/images/nav_tracking_inactive.svg',
           ),
           _buildTabItem(
             index: 4,
-            label: '라이브러리',
-            iconPath: 'assets/images/library_icon.svg',
+            label: '마이페이지',
+            iconPath: 'assets/images/nav_library_active.svg',
           ),
         ],
       ),
