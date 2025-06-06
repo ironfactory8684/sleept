@@ -6,6 +6,18 @@ final habitCategoriesProvider = FutureProvider<Map<String, dynamic>>((ref) async
   return await HabitSupabaseService.instance.getAllHabitCategories();
 });
 
+final habitAllItemsProvider = FutureProvider<List<Map<String, dynamic>>>((ref) async {
+  print("hello");
+  try {
+    return await HabitSupabaseService.instance.getHabitAllItems();
+  } catch (e) {
+    // 로그인하지 않은 경우 빈 리스트 반환
+    print(e);
+    return [];
+  }
+
+});
+
 // 사용자 습관 데이터 프로바이더
 final userHabitsProvider = FutureProvider<List<Map<String, dynamic>>>((ref) async {
   try {
@@ -34,6 +46,35 @@ final singleHabitProvider = FutureProvider.family<Map<String, dynamic>, String>(
     return habit;
   },
 );
+
+// New StateNotifier for selected habit items
+class SelectedHabitItemsNotifier extends StateNotifier<List<Map<String, dynamic>>> {
+  SelectedHabitItemsNotifier() : super([]);
+
+  void addHabit(Map<String, dynamic> habit) {
+    // Ensure 'id' key exists and is not null
+    if (habit['id'] == null) {
+      print("Error: Habit item is missing an 'id'. Cannot add to selected list.");
+      return;
+    }
+    if (!state.any((item) => item['id'] == habit['id'])) {
+      state = [...state, habit];
+    }
+  }
+
+  void removeHabit(dynamic habitId) {
+    state = state.where((item) => item['id'] != habitId).toList();
+  }
+
+  bool isSelected(dynamic habitId) {
+    return state.any((item) => item['id'] == habitId);
+  }
+}
+
+final selectedHabitItemsNotifierProvider =
+    StateNotifierProvider<SelectedHabitItemsNotifier, List<Map<String, dynamic>>>((ref) {
+  return SelectedHabitItemsNotifier();
+});
 
 // 습관 트래킹 데이터 프로바이더
 final habitTrackingProvider = FutureProvider.family<List<Map<String, dynamic>>, String>(

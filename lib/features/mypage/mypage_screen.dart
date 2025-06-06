@@ -7,6 +7,7 @@ import 'package:sleept/services/supabase_service.dart';
 
 import '../../constants/colors.dart';
 import 'library_screen.dart';
+import 'my_habit_list_screen.dart';
 
 class MypageScreen extends ConsumerWidget {
   const MypageScreen({super.key});
@@ -185,7 +186,7 @@ class MypageScreen extends ConsumerWidget {
                           padding: EdgeInsets.all(18),
                           alignment: Alignment.bottomCenter,
                           decoration: ShapeDecoration(
-                            color: const Color(0xFF838383),
+                            image: DecorationImage(image: AssetImage('assets/images/sleept_library.png')),
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(12),
                             ),
@@ -208,6 +209,12 @@ class MypageScreen extends ConsumerWidget {
                       child: GestureDetector(
                         onTap: () {
                           if (isLogin) {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) =>  MyHabitListScreen(),
+                              ),
+                            );
                             // Navigate to Habit List screen
                           } else {
                             _showLoginRequiredDialog(context, '습관 리스트');
@@ -218,7 +225,7 @@ class MypageScreen extends ConsumerWidget {
                           padding: EdgeInsets.all(18),
                           alignment: Alignment.bottomCenter,
                           decoration: ShapeDecoration(
-                            color: const Color(0xFF838383),
+                            image: DecorationImage(image: AssetImage('assets/images/sleept_habit.png')),
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(12),
                             ),

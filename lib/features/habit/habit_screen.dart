@@ -5,8 +5,10 @@ import 'package:sleept/components/category_item_card.dart';
 import 'package:sleept/constants/colors.dart';
 import 'package:sleept/constants/text_styles.dart';
 import 'package:sleept/features/habit/habit_detail_screen.dart';
-import 'package:sleept/features/habit/my_habits_screen.dart';
+import 'package:sleept/features/habit/model/shared_habit_list_model.dart';
+import 'package:sleept/features/habit/shared_habit_detail_screen.dart';
 import 'package:sleept/providers/auth_provider.dart';
+import 'package:sleept/providers/shared_habit_provider.dart';
 
 class HabitScreen extends ConsumerWidget {
   const HabitScreen({super.key});
@@ -57,75 +59,73 @@ class HabitScreen extends ConsumerWidget {
                 ),
               ),
             ),
-            SliverToBoxAdapter(
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                child: Column(
-                  children: [
-                    Container(
-                      width: double.infinity,
-                      padding: const EdgeInsets.all(18),
-                      decoration: ShapeDecoration(
-                        color: const Color(
-                          0xFF242030,
-                        ) /* Primitive-Color-gray-900 */,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(16),
+            // Display public shared habit lists
+            Consumer(
+              builder: (context, ref, child) {
+                final sharedHabitsAsync = ref.watch(publicSharedHabitsProvider);
+                
+                return sharedHabitsAsync.when(
+                  data: (sharedHabits) {
+                    if (sharedHabits.isEmpty) {
+                      return SliverToBoxAdapter(
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 20),
+                          child: Center(
+                            child: Text(
+                              '아직 공유된 습관 리스트가 없습니다.',
+                              style: TextStyle(
+                                color: Colors.white70,
+                                fontSize: 16,
+                                fontFamily: 'Pretendard',
+                              ),
+                            ),
+                          ),
                         ),
+                      );
+                    }
+                    
+                    return SliverList(
+                      delegate: SliverChildBuilderDelegate(
+                        (context, index) {
+                          final habit = sharedHabits[index];
+                          return Padding(
+                            padding: EdgeInsets.only(
+                              left: 16.0, 
+                              right: 16.0, 
+                              top: index == 0 ? 16.0 : 8.0,
+                              bottom: index == sharedHabits.length - 1 ? 16.0 : 8.0,
+                            ),
+                            child: _buildSharedHabitListCard(context, habit),
+                          );
+                        },
+                        childCount: sharedHabits.length,
                       ),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.start,
-                        crossAxisAlignment: CrossAxisAlignment.center,
-                        children: [
-                          Container(
-                            width: 68,
-                            height: 68,
-                            decoration: ShapeDecoration(
-                              image: DecorationImage(
-                                image: NetworkImage("https://placehold.co/68x68"),
-                                fit: BoxFit.cover,
-                              ),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                            ),
-                          ),
-                          Expanded(
-                            child: Column(
-                              mainAxisAlignment: MainAxisAlignment.start,
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  '출근하기 전 간단 운동',
-                                  style: TextStyle(
-                                    color: Colors.white /* Primitive-Color-White */,
-                                    fontSize: 16,
-                                    fontFamily: 'Pretendard',
-                                    fontWeight: FontWeight.w700,
-                                    height: 1.50,
-                                  ),
-                                ),
-                                Text(
-                                  '평소보다 30분 일찍 일어나고 개운하게 하루를 시작하기에 딱 좋아요💜',
-                                  style: TextStyle(
-                                    color: const Color(
-                                      0xFFCECDD4,
-                                    ) /* Primitive-Color-gray-200 */,
-                                    fontSize: 13,
-                                    fontFamily: 'Pretendard',
-                                    fontWeight: FontWeight.w400,
-                                    height: 1.50,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
+                    );
+                  },
+                  loading: () => const SliverToBoxAdapter(
+                    child: Padding(
+                      padding: EdgeInsets.all(32.0),
+                      child: Center(
+                        child: CircularProgressIndicator(),
                       ),
                     ),
-                  ],
-                ),
-              ),
+                  ),
+                  error: (error, stackTrace) => SliverToBoxAdapter(
+                    child: Padding(
+                      padding: const EdgeInsets.all(16.0),
+                      child: Center(
+                        child: Text(
+                          '습관 리스트를 불러오는 중 오류가 발생했습니다: $error',
+                          style: TextStyle(
+                            color: Colors.red[300],
+                            fontSize: 14,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                );
+              },
             ),
           ],
         ),
@@ -169,6 +169,97 @@ class HabitScreen extends ConsumerWidget {
     );
   }
   
+  Widget _buildSharedHabitListCard(BuildContext context, SharedHabitList habit) {
+    // Default placeholder image if none is provided
+    final imageUrl = habit.imageUrl?.isNotEmpty == true
+        ? habit.imageUrl!
+        : "assets/images/sleept_basic.png";
+    
+    return GestureDetector(
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => SharedHabitDetailScreen(sharedHabitId: habit.id),
+          ),
+        );
+      },
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(18),
+        decoration: ShapeDecoration(
+          color: const Color(0xFF242030),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          // Image container
+          Container(
+            width: 68,
+            height: 68,
+            decoration: ShapeDecoration(
+              image: DecorationImage(
+                image: imageUrl.startsWith('http')
+                    ? NetworkImage(imageUrl)
+                    : AssetImage("assets/images/sleept_basic.png") as ImageProvider,
+                fit: BoxFit.cover,
+              ),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+            ),
+          ),
+          const SizedBox(width: 16),
+          // Text content container
+          Expanded(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.start,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  habit.title,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 16,
+                    fontFamily: 'Pretendard',
+                    fontWeight: FontWeight.w700,
+                    height: 1.50,
+                  ),
+                ),
+                if (habit.description?.isNotEmpty == true) ...[  
+                  const SizedBox(height: 2),
+                  Text(
+                    habit.description!,
+                    style: const TextStyle(
+                      color: Color(0xFFCECDD4),
+                      fontSize: 13,
+                      fontFamily: 'Pretendard',
+                      fontWeight: FontWeight.w400,
+                      height: 1.50,
+                    ),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
+                const SizedBox(height: 8),
+                Text(
+                  "습관 ${habit.habits.length}개",
+                  style: const TextStyle(
+                    color: Color(0xFFB8B6C0),
+                    fontSize: 12,
+                    fontFamily: 'Pretendard',
+                    fontWeight: FontWeight.w400,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    ),
+    );
+  }
+
   Widget _buildCategoryCards(BuildContext context) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
